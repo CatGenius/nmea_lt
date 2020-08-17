@@ -9,6 +9,9 @@
 #include "serial.h"
 
 
+/******************************************************************************/
+/* Macros                                                                     */
+/******************************************************************************/
 #define MINUTES_PER_HOUR        (60)
 #define SECONDS_PER_MINUTES     (60)
 #define SECONDS_PER_HOUR        (MINUTES_PER_HOUR * SECONDS_PER_MINUTES)
@@ -19,6 +22,9 @@
 #define TIME_ZONE_M             (TIME_ZONE * MINUTES_PER_HOUR)
 
 
+/******************************************************************************/
+/* Static functions                                                           */
+/******************************************************************************/
 static void mkdst(struct tm *utc, struct tm *local)
 {
 	/* Return if flag is already valid */
@@ -69,10 +75,93 @@ static void mkdst(struct tm *utc, struct tm *local)
 	}
 }
 
-/******************************************************************************/
-/* Local Implementations						      */
-/******************************************************************************/
-static void interrupt_init(void)
+
+void disable_peripherals(void)
+{
+/*
+	PMD0bits.IOCMD   = 0;
+	PMD0bits.CLKRMD  = 0;
+	PMD0bits.NVMMD   = 0;
+	PMD0bits.FVRMD   = 0;
+	PMD0bits.SYSCMD  = 0;
+
+	PMD1bits.TMR0MD  = 0;
+	PMD1bits.TMR1MD  = 0;
+	PMD1bits.TMR2MD  = 0;
+	PMD1bits.DDS1MD  = 0;
+*/
+	PMD2bits.ZCDMD   = 0;
+	PMD2bits.CMP1MD  = 0;
+	PMD2bits.CMP2MD  = 0;
+	PMD2bits.ADCMD   = 0;
+	PMD2bits.DAC1MD  = 0;
+
+	PMD3bits.CCP1MD  = 0;
+	PMD3bits.CCP2MD  = 0;
+	PMD3bits.PWM3MD  = 0;
+	PMD3bits.PWM4MD  = 0;
+	PMD3bits.PWM5MD  = 0;
+	PMD3bits.PWM6MD  = 0;
+
+	PMD4bits.CWG1MD  = 0;
+	PMD4bits.MSSP1MD = 0;
+//	PMD4bits.UART1MD = 1;
+//	PMD4bits.UART2MD = 1;
+
+	PMD5bits.CLC1MD  = 0;
+	PMD5bits.CLC2MD  = 0;
+	PMD5bits.CLC3MD  = 0;
+	PMD5bits.CLC4MD  = 0;
+}
+
+
+static void init_clocks(void)
+{
+	/* Select HFINTOSC, divide by 1*/ 
+	OSCCON1bits.NDIV = 0;
+	OSCCON1bits.NOSC = 6;
+
+	/* Clock switch may proceed when the oscillator selected by NOSC is ready may proceed. */
+	/* Secondary oscillator operating in Low-power mode */
+	OSCCON3 = 0x00;
+
+	/* Disable EXTOEN, HFOEN. MFOEN, LFOEN, SOSCEN and ADOEN */
+	OSCEN = 0x00;
+
+	/* Set HFINTOSC to 32MHz */
+	OSCFRQbits.HFFRQ = 0x06;
+
+	/* Reset oscillator tuning */
+	OSCTUNEbits.HFTUN = 0x00;
+}
+
+
+static void init_pins(void)
+{
+	/* Disable analog input on pins used digitally */
+	ANSELC &= ~(1 << 1);
+
+	/* Unlock Peripheral Pin Select module (PPS) */
+	PPSLOCK = 0x55;
+	PPSLOCK = 0xAA;
+	PPSLOCKbits.PPSLOCKED = 0;
+
+	/* UART1 */
+	RX1DTPPS = 0x15;  /* Connect RX2 to RC5 input pin */
+	RC4PPS   = 0x0f;  /* Connect RC4 output to TX1 */
+
+	/* UART2 */
+	RX2DTPPS = 0x11;  /* Connect RX2 to RC1 input pin */
+	RC0PPS   = 0x11;  /* Connect RC0 output pin to TX2 */
+
+	/* Lock Peripheral Pin Select module (PPS) */
+	PPSLOCK = 0x55;
+	PPSLOCK = 0xAA;
+	PPSLOCKbits.PPSLOCKED = 1;
+}
+
+
+static void init_interrupt(void)
 {
 	/* Enable peripheral interrupts */
 	PEIE = 1;
@@ -80,6 +169,7 @@ static void interrupt_init(void)
 	/* Enable interrupts */
 	GIE = 1;
 }
+
 
 static void interrupt isr(void)
 {
@@ -104,12 +194,20 @@ static void interrupt isr(void)
 		serial_tx_isr();
 }
 
+
+/******************************************************************************/
+/* Functions                                                                  */
+/******************************************************************************/
 void main(void)
 {
 	struct tm  utc;
 	struct tm  local;
 	time_t     utc_secs;
 	time_t     local_secs;
+
+	disable_peripherals();
+	init_clocks();
+	init_pins();
 
 	time_zone = TIME_ZONE;
 
@@ -134,7 +232,7 @@ void main(void)
 
 	/* Set the DST flag (tzset() is not supported) */
 	mkdst(&utc, &local);
-	
+
 	local_secs = utc_secs +
 	             LT_OFFSET_S +
 	             ((local.tm_isdst > 0) ? DST_OFFSET_S : 0);
@@ -142,43 +240,19 @@ void main(void)
 //	localtime();
 //	gmtime();
 
-//	ODCONC &= ~0x01;	/* Disable open-drain on output RC0, setting it to push-pull */
-
-    // NOSC HFINTOSC; NDIV 1;
-    OSCCON1 = 0x60;
-    // CSWHOLD may proceed; SOSCPWR Low power;
-    OSCCON3 = 0x00;
-    // MFOEN disabled; LFOEN disabled; ADOEN disabled; SOSCEN disabled; EXTOEN disabled; HFOEN disabled;
-    OSCEN = 0x00;
-    // HFFRQ 32_MHz;
-    OSCFRQ = 0x06;
-    // MFOR not ready;
-    OSCSTAT = 0x00;
-    // HFTUN 0;
-    OSCTUNE = 0x00;
-    
-    
-GIE = 0;
-PPSLOCK = 0x55;
-PPSLOCK = 0xAA;
-PPSLOCKbits.PPSLOCKED = 0x00; // unlock PPS
-
-RC0PPS = 0x11;  /* Connect RC0 output to TX2 */
-//RB7PPS = 0x0F;  /* Connect RB7 output to TX1 */
-PPSLOCK = 0x55;
-PPSLOCK = 0xAA;
-PPSLOCKbits.PPSLOCKED = 0x01; // lock PPS
-
 	/* Initialize the serial port for stdio */
 	serial_init(115200, 0);
 
 	/* Initialize interrupts */
-	interrupt_init();
+	init_interrupt();
 
 	/* Execute the run loop */
 	for(;;) {
-//		LATC = 0;
-//		LATC = 1;
-		printf("Test\n");
+		char rxd;
+
+		if (readch(&rxd))
+			printf("Received 0x%.2x\r\n", (int)rxd);
+
+		CLRWDT();
 	}
 }

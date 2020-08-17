@@ -6,7 +6,7 @@
 
 #define RXBUFFER			/* Use buffers for received characters */
 //#define TXBUFFER			/* Use buffers for transmitted character (MAKE SURE TO ENABLE INTERRUPTS BEFORE TRANSMITTING ANYTHING) */
-#define BUFFER_SIZE		8	/* Buffer size.  Has to be a power of 2 and congruent with queue.head and queue.tail or roll-overs need to be taken into account */
+#define BUFFER_SIZE		8	/* Buffer size. Has to be a power of 2 and congruent with queue.head and queue.tail or roll-overs need to be taken into account */
 #define BUFFER_SPARE		2	/* Minumum number of free positions before issuing Xoff */
 
 #define INTDIV(t,n)		((2*(t)+(n))/(2*(n)))		/* Macro for integer division with proper round-off (BEWARE OF OVERFLOW!) */
@@ -63,8 +63,8 @@ void serial_init(unsigned long bitrate, unsigned char flow)
 	TX2STAbits.BRGH = 1;	/* High-speed bit rate generation */
 	TX2STAbits.SYNC = 0;	/* Asynchronous mode */
 	RC2STAbits.SPEN = 1;	/* Enable serial port pins */
-	RC2IE = 0;		/* Disable rx interrupt */
-	TX2IE = 0;		/* Disable tx interrupt */
+	RC2IE           = 0;	/* Disable rx interrupt */
+	TX2IE           = 0;	/* Disable tx interrupt */
 	RC2STAbits.RX9  = 0;	/* 8-bit reception mode */
 	TX2STAbits.TX9  = 0;	/* 8-bit transmission mode */
 	RC2STAbits.CREN = 0;	/* Reset receiver */
@@ -112,7 +112,7 @@ void serial_rx_isr(void)
 #ifdef RXBUFFER
 	/* Handle overflow errors */
 	if (RC2STAbits.OERR) {
-		rx.buffer[rx.head] = RCREG; /* Read RX register, but do not queue */
+		rx.buffer[rx.head] = RC2REG; /* Read RX register, but do not queue */
 		TX2STAbits.TXEN = 0;
 		TX2STAbits.TXEN = 1;
 		RC2STAbits.CREN = 0;
@@ -121,13 +121,13 @@ void serial_rx_isr(void)
 	}
 	/* Handle framing errors */
 	if (RC2STAbits.FERR) {
-		rx.buffer[rx.head] = RCREG; /* Read RX register, but do not queue */
+		rx.buffer[rx.head] = RC2REG; /* Read RX register, but do not queue */
 		TX2STAbits.TXEN = 0;
 		TX2STAbits.TXEN = 1;
 		return;
 	}
 	/* Copy the character from RX register into RX queue */
-	rx.buffer[rx.head] = RCREG;
+	rx.buffer[rx.head] = RC2REG;
 #ifdef TXBUFFER
 	/* Check if an Xon or Xoff needs to be handled */
 	if (tx.xon_enabled) {
@@ -217,9 +217,9 @@ void putch(char ch)
 		if (RC2STAbits.FERR) {
 			volatile unsigned char dummy;
 
-			dummy = RCREG;
-			TX2STAbits.TXEN  = 0;
-			TX2STAbits.TXEN  = 1;
+			dummy = RC2REG;
+			TX2STAbits.TXEN = 0;
+			TX2STAbits.TXEN = 1;
 		}
 		CLRWDT();
 	}
@@ -277,13 +277,13 @@ unsigned char readch(char *ch)
 		return 0;
 	}
 	if (RC2STAbits.FERR) {
-		*ch  = RCREG;
+		*ch = RC2REG;
 		TX2STAbits.TXEN = 0;
 		TX2STAbits.TXEN = 1;
 		return 0;
 	}
 
-	*ch  = RCREG;
+	*ch = RC2REG;
 	return 1;
 #endif /* RXBUFFER */
 }
