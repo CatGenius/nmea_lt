@@ -26,11 +26,11 @@
 /******************************************************************************/
 /* Globals                                                                    */
 /******************************************************************************/
-const struct command	commands[] = {
-	{"?", help},
-	{"help", help},
-	{"echo", echo},
-	{"", NULL}
+const struct command_t  commands[] = {
+	{"?",    cmdline_help},
+	{"help", cmdline_help},
+	{"echo", cmdline_echo},
+	{"",     NULL}
 };
 
 

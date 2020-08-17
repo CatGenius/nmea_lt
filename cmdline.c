@@ -15,25 +15,25 @@
 
 
 /******************************************************************************/
-/* Macros                                                                     */
+/*** Macros                                                                 ***/
 /******************************************************************************/
-#define PROMPT		"# "
+#define PROMPT                 "# "
 
 
 /******************************************************************************/
-/* Global Data                                                                */
+/*** Global Data                                                            ***/
 /******************************************************************************/
-extern const struct command	commands[];
-static char			linebuffer[LINEBUFFER_MAX];
-static unsigned char		localecho = 1;
+extern const struct command_t  commands[];
+static char                    linebuffer[CMDLINE_LENGTH_MAX];
+static unsigned char           localecho = 1;
 
 
 /******************************************************************************/
-/* Static functions                                                           */
+/*** Static functions                                                       ***/
 /******************************************************************************/
 static int cmd2index(char *cmd)
 {
-	int index = 0;
+	int  index = 0;
 
 	while (commands[index].function) {
 		if (!strcmp (cmd, commands[index].cmd))
@@ -47,10 +47,10 @@ static int cmd2index(char *cmd)
 
 static void proc_line(char *line)
 {
-	unsigned int	len = strlen(line);
-	int		argc = 0;
-	char		*argv[ARGS_MAX];
-	int		index;
+	unsigned int len = strlen(line);
+	int          argc = 0;
+	char         *argv[ARGS_MAX];
+	int          index;
 
 	/* Trim trailing white spaces */
 	while (len && (line[len-1] == ' ' || line[len-1] == '\t')) {
@@ -104,7 +104,7 @@ static void proc_char(char rxd)
 	static unsigned char curcolumn = 0;
 
 	if ((rxd >= ' ') && (rxd <= '~')) {
-		if (curcolumn < (LINEBUFFER_MAX-1)) {
+		if (curcolumn < (CMDLINE_LENGTH_MAX-1)) {
 			/* Add readable characters to the line as long as the buffer permits */
 			linebuffer[curcolumn] = rxd;
 			curcolumn++;
@@ -143,7 +143,7 @@ static void proc_char(char rxd)
 
 
 /******************************************************************************/
-/* Functions                                                                  */
+/*** Functions                                                              ***/
 /******************************************************************************/
 void cmdline_init(void)
 {
@@ -161,15 +161,18 @@ void cmdline_work(void)
 }
 
 
-int echo(int argc, char* argv[])
+/******************************************************************************/
+/*** Built-in commands                                                      ***/
+/******************************************************************************/
+int cmdline_echo(int argc, char *argv[])
 {
 	if (argc > 2)
 		return ERR_SYNTAX;
 
 	if (argc == 2) {
-		if (!strncmp (argv[1], "on", LINEBUFFER_MAX))
+		if (!strncmp(argv[1], "on", CMDLINE_LENGTH_MAX))
 			localecho = 1;
-		else if (!strncmp (argv[1], "off", LINEBUFFER_MAX))
+		else if (!strncmp(argv[1], "off", CMDLINE_LENGTH_MAX))
 			localecho = 0;
 		else
 			return ERR_SYNTAX;
@@ -180,7 +183,8 @@ int echo(int argc, char* argv[])
 }
 
 
-int help(int argc, char *argv[])
+#ifdef CMDLINE_HELP
+int cmdline_help(int argc, char *argv[])
 {
 	int index = 0;
 
@@ -195,3 +199,4 @@ int help(int argc, char *argv[])
 
 	return ERR_OK;
 }
+#endif /* CMDLINE_HELP */
