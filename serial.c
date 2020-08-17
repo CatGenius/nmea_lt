@@ -1,7 +1,11 @@
-#include <htc.h>
+#include <xc.h>
 
 #include "serial.h"
 
+
+/******************************************************************************/
+/* Macros                                                                     */
+/******************************************************************************/
 #define _XTAL_FREQ 32000000
 
 #define RXBUFFER			/* Use buffers for received characters */
@@ -16,6 +20,9 @@
 #define XOFF			0x13	/* ASCII value for Xoff (^Q) */
 
 
+/******************************************************************************/
+/* Types                                                                      */
+/******************************************************************************/
 struct queue {
 	char		buffer[BUFFER_SIZE];	/* Here's where the data goes */
 	unsigned	head		: 3;	/* Index to a currently free position in buffer */
@@ -24,6 +31,10 @@ struct queue {
 	unsigned	xon_state	: 1;	/* Keeps track of current Xon/Xoff state for this queue */
 };
 
+
+/******************************************************************************/
+/* Global data                                                                */
+/******************************************************************************/
 #ifdef RXBUFFER
 struct queue		rx;
 #endif /* RXBUFFER */
@@ -32,6 +43,9 @@ struct queue		tx;
 #endif /* TXBUFFER */
 
 
+/******************************************************************************/
+/* Functions                                                                  */
+/******************************************************************************/
 void serial_init(unsigned long bitrate, unsigned char flow)
 {
 #ifdef RXBUFFER

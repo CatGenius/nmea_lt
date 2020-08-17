@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "cmdline.h"
 #include "serial.h"
 
 
@@ -20,6 +21,17 @@
 
 #define TIME_ZONE               (1)
 #define TIME_ZONE_M             (TIME_ZONE * MINUTES_PER_HOUR)
+
+
+/******************************************************************************/
+/* Globals                                                                    */
+/******************************************************************************/
+const struct command	commands[] = {
+	{"?", help},
+	{"help", help},
+	{"echo", echo},
+	{"", NULL}
+};
 
 
 /******************************************************************************/
@@ -257,16 +269,19 @@ void main(void)
 	nPOR = 1;
 	nBOR = 1;
 
+	cmdline_init();
+
 	/* Initialize interrupts */
 	init_interrupt();
 
 	/* Execute the run loop */
 	for(;;) {
-		char rxd;
+		cmdline_work();
+/*		char rxd;
 
 		if (readch(&rxd))
 			printf("Received 0x%.2x\r\n", (int)rxd);
-
+*/
 		CLRWDT();
 	}
 }
