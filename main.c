@@ -37,14 +37,15 @@ const struct command_t  commands[] = {
 /******************************************************************************/
 /* Static functions                                                           */
 /******************************************************************************/
-static void mkdst(struct tm *utc, struct tm *local)
+static void mkdst(time_t utc_secs, struct tm *local)
 {
-	/* Return if flag is already valid */
-	if (utc->tm_isdst >= 0)
-		return;
+	struct tm  *utc = gmtime(&utc_secs);
 
 	/* Copy UTC to Local time */
 	*local = *utc;
+
+	/* Invalidate daylight saving time flag, mistakenly set 0 instead of -1 by gmtime() */
+	local->tm_isdst = -1;
 
 	switch(local->tm_mon) {
 	case 10:  /* November */
@@ -65,25 +66,30 @@ static void mkdst(struct tm *utc, struct tm *local)
 
 	case 2:  /* March */
 	case 9:  /* October */
-		/* Check if we're not in the last week of the month */
+		/* Check if it is not the last week of the month yet */
 		if (local->tm_mday <= 31 - 7) {
 			local->tm_isdst = (local->tm_mon == 9) ? 1 : 0;
 			return;
 		}
 
-		/* Check if it's the last Sunday now */
+		/* Check if it is the last Sunday now */
 		if (local->tm_wday == 0) {
-
+			if (local->tm_hour > 0)
+				local->tm_isdst = (local->tm_mon == 9) ? 0 : 1;
+			else
+				local->tm_isdst = (local->tm_mon == 9) ? 1 : 0;
 			return;
 		}
 
-		/* Check if we're past the last Sunday */
-		if (7 - local->tm_wday > 31) {
-
+		/* Check if it is past the last Sunday */
+		if (local->tm_mday + 7 - local->tm_wday > 31) {
+			local->tm_isdst = (local->tm_mon == 9) ? 0 : 1;
 			return;
 		}
 
-		break;
+		/* It is before the last Sunday */
+		local->tm_isdst = (local->tm_mon == 9) ? 1 : 0;
+		return;
 	}
 }
 
@@ -129,7 +135,7 @@ void disable_peripherals(void)
 
 static void init_clocks(void)
 {
-	/* Select HFINTOSC, divide by 1*/ 
+	/* Select HFINTOSC, divide by 1*/
 	OSCCON1bits.NDIV = 0;
 	OSCCON1bits.NOSC = 6;
 
@@ -243,7 +249,7 @@ void main(void)
 		return;
 
 	/* Set the DST flag (tzset() is not supported) */
-	mkdst(&utc, &local);
+	mkdst(utc_secs, &local);
 
 	local_secs = utc_secs +
 	             LT_OFFSET_S +
