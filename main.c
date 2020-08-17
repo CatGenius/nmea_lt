@@ -243,6 +243,20 @@ void main(void)
 	/* Initialize the serial port for stdio */
 	serial_init(115200, 0);
 
+	printf("\n*** NMEA local time converter ***\n");
+	if (!nPOR)
+		printf("Power-on reset\n");
+	else if (!nBOR)
+		printf("Brown-out reset\n");
+	else if (!__timeout)
+		printf("Watchdog reset\n");
+	else if (!__powerdown)
+		printf("Pin reset (sleep)\n");
+	else
+		printf("Pin reset\n");
+	nPOR = 1;
+	nBOR = 1;
+
 	/* Initialize interrupts */
 	init_interrupt();
 
