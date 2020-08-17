@@ -154,10 +154,10 @@ void cmdline_init(void)
 
 void cmdline_work(void)
 {
-	int  byte;
+	char  byte;
 
 	/* Read input data from stdin */
-	while ((byte = getchar()) != EOF)
+	while ((byte = getchar()) != (char)EOF)
 		/* Process the byte */
 		proc_char((char)byte);
 }

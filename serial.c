@@ -247,7 +247,7 @@ void putch(char ch)
 char getche(void)
 {
 #ifdef RXBUFFER
-	unsigned char	result = EOF;
+	char  result = EOF;
 
 	RC2IE = 0;	/* Disable rx interrupt for concurrency */
 #ifdef TXBUFFER

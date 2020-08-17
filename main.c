@@ -277,11 +277,7 @@ void main(void)
 	/* Execute the run loop */
 	for(;;) {
 		cmdline_work();
-/*		char rxd;
 
-		if (readch(&rxd))
-			printf("Received 0x%.2x\r\n", (int)rxd);
-*/
 		CLRWDT();
 	}
 }
