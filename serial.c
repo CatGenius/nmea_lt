@@ -1,6 +1,6 @@
 #include <xc.h>
 
-#include "serial.h"
+#include <stdio.h>
 
 
 /******************************************************************************/
@@ -191,7 +191,7 @@ void serial_tx_isr(void)
 }
 
 
-/* Write a character to the serial port */
+/* Hook to stdout */
 void putch(char ch)
 {
 #ifdef TXBUFFER
@@ -243,11 +243,11 @@ void putch(char ch)
 }
 
 
-/* Read a character from the serial port */
-unsigned char readch(char *ch)
+/* Hook to stdin */
+char getche(void)
 {
 #ifdef RXBUFFER
-	unsigned char	result = 0;
+	unsigned char	result = EOF;
 
 	RC2IE = 0;	/* Disable rx interrupt for concurrency */
 #ifdef TXBUFFER
@@ -257,7 +257,7 @@ unsigned char readch(char *ch)
 	/* Check if there's anything to read */
 	if (rx.head != rx.tail) {
 		/* Copy the character from the RX queue */
-		*ch = rx.buffer[rx.tail];
+		result = rx.buffer[rx.tail];
 		/* Dequeue the character */
 		rx.tail++;
 		/* Check if an Xon is in required */
@@ -268,7 +268,6 @@ unsigned char readch(char *ch)
 			TX2REG = XON;
 			rx.xon_state = 1;
 		}
-		result = 1;
 	}
 
 	RC2IE = 1;	/* Re-enable rx interrupt */
@@ -281,7 +280,7 @@ unsigned char readch(char *ch)
 
 #else /* !RXBUFFER */
 	if (!RCIF)
-		return 0;
+		return EOF;
 
 	if (RC2STAbits.OERR) {
 		TX2STAbits.TXEN = 0;
@@ -291,13 +290,14 @@ unsigned char readch(char *ch)
 		return 0;
 	}
 	if (RC2STAbits.FERR) {
-		*ch = RC2REG;
+		volatile unsigned char dummy;
+
+		dummy = RC2REG;
 		TX2STAbits.TXEN = 0;
 		TX2STAbits.TXEN = 1;
 		return 0;
 	}
 
-	*ch = RC2REG;
-	return 1;
+	return RC2REG;
 #endif /* RXBUFFER */
 }

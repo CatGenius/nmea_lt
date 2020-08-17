@@ -47,10 +47,10 @@ static int cmd2index(char *cmd)
 
 static void proc_line(char *line)
 {
-	unsigned int len = strlen(line);
-	int          argc = 0;
-	char         *argv[ARGS_MAX];
-	int          index;
+	unsigned int  len = strlen(line);
+	int           argc = 0;
+	char          *argv[ARGS_MAX];
+	int           index;
 
 	/* Trim trailing white spaces */
 	while (len && (line[len-1] == ' ' || line[len-1] == '\t')) {
@@ -101,7 +101,7 @@ static void proc_line(char *line)
 
 static void proc_char(char rxd)
 {
-	static unsigned char curcolumn = 0;
+	static unsigned char  curcolumn = 0;
 
 	if ((rxd >= ' ') && (rxd <= '~')) {
 		if (curcolumn < (CMDLINE_LENGTH_MAX-1)) {
@@ -154,10 +154,12 @@ void cmdline_init(void)
 
 void cmdline_work(void)
 {
-	char rxd ;
+	int  byte;
 
-	while (readch(&rxd))
-			proc_char(rxd);
+	/* Read input data from stdin */
+	while ((byte = getchar()) != EOF)
+		/* Process the byte */
+		proc_char((char)byte);
 }
 
 
@@ -186,7 +188,7 @@ int cmdline_echo(int argc, char *argv[])
 #ifdef CMDLINE_HELP
 int cmdline_help(int argc, char *argv[])
 {
-	int index = 0;
+	int  index = 0;
 
 	if (argc > 1)
 		return ERR_SYNTAX;
