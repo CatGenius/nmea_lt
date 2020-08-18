@@ -311,9 +311,9 @@ static void interrupt isr(void)
 
 	/* (E)USART 2 interrupts */
 	if (RC2IF)
-		serial_rx_isr();
+		uart2_rx_isr();
 	if (TX2IF)
-		serial_tx_isr();
+		uart2_tx_isr();
 }
 
 
@@ -366,7 +366,7 @@ void main(void)
 //	gmtime();
 
 	/* Initialize the serial port for stdio */
-	serial_init(115200, 0);
+	uart2_init(115200, 0);
 	uart1_init(4800, 0);
 		
 	printf("\n*** NMEA local time converter ***\n");

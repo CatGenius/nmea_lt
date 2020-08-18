@@ -46,7 +46,7 @@ static struct queue		tx;
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
-void serial_init(unsigned long bitrate, unsigned char flow)
+void uart2_init(unsigned long bitrate, unsigned char flow)
 {
 #ifdef RXBUFFER
 	rx.head        = 0;
@@ -97,7 +97,7 @@ void serial_init(unsigned long bitrate, unsigned char flow)
 }
 
 
-void serial_term(void)
+void uart2_term(void)
 {
 #ifdef RXBUFFER
 	RC2IE = 0;	/* Disable rx interrupt */
@@ -121,7 +121,7 @@ void serial_term(void)
 }
 
 
-void serial_rx_isr(void)
+void uart2_rx_isr(void)
 {
 #ifdef RXBUFFER
 	/* Handle overflow errors */
@@ -176,7 +176,7 @@ void serial_rx_isr(void)
 }
 
 
-void serial_tx_isr(void)
+void uart2_tx_isr(void)
 {
 #ifdef TXBUFFER
 	/* Copy the character from the TX queue into the TX register */

@@ -1,18 +1,18 @@
 /******************************************************************************/
-/* File    : serial.h                                                         */
-/* Function: Header file of 'serial.c'                                        */
+/* File    : uart2.h                                                          */
+/* Function: Header file of 'uart2.c'                                         */
 /* Author  : Robert Delien                                                    */
 /* Copyright (C) 2010, Clockwork Engineering                                  */
 /******************************************************************************/
-#ifndef SERIAL_H
-#define SERIAL_H
+#ifndef UART2_H
+#define UART2_H
 
 
-void           serial_init  (unsigned long  bitrate,
-                             unsigned char  flow);
-void           serial_term  (void);
-void           serial_rx_isr(void);
-void           serial_tx_isr(void);
+void           uart2_init  (unsigned long  bitrate,
+                            unsigned char  flow);
+void           uart2_term  (void);
+void           uart2_rx_isr(void);
+void           uart2_tx_isr(void);
 
 
-#endif /* SERIAL_H */
+#endif /* UART2_H */
