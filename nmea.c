@@ -10,6 +10,12 @@
 
 
 /******************************************************************************/
+/*** Macros                                                                 ***/
+/******************************************************************************/
+#define NMEA_ARGS_MAX  16
+
+
+/******************************************************************************/
 /*** Global Data                                                            ***/
 /******************************************************************************/
 extern const struct nmea_t  nmea[];
@@ -32,7 +38,6 @@ static int keyword2index(char *keyword)
 }
 
 
-#define NMEA_ARGS_MAX  16
 static void proc_nmea_sentence(char *sentence, char len)
 {
 	int            ndx;
@@ -42,12 +47,15 @@ static void proc_nmea_sentence(char *sentence, char len)
 	int            argc = 0;
 	char           *argv[NMEA_ARGS_MAX];
 
-	if (len < 4)
-		/* NMEA sentence too short */
+	if (len < 4) {
+		printf("NMEA: Dropping under-sized message '%s'\n", sentence);
 		return;
-	if (sentence[len - 3] != '*')
-		/* Checksum separator missing */
+	}
+
+	if (sentence[len - 3] != '*') {
+		printf("NMEA: Dropping message without checksum separator '%s'\n", sentence);
 		return;
+	}
 
 	checksum = strtoul(&sentence[len - 2], &endptr, 16);
 	if (*endptr != '\0')
@@ -56,8 +64,10 @@ static void proc_nmea_sentence(char *sentence, char len)
 
 	for (ndx = 0; ndx < len - 3; ndx++)
 		calcsum ^= sentence[ndx];
-	if (calcsum != checksum)
+	if (calcsum != checksum) {
+		printf("NMEA: Dropping message with bad checksum 0x%.2x '%s'\n", calcsum, sentence);
 		return;
+	}
 	sentence[len - 3] = '\0';
 	len -= 3;
 
@@ -65,16 +75,22 @@ static void proc_nmea_sentence(char *sentence, char len)
 	while (*sentence != '\0') {
 		/* Replace leading commas with 0-terminations and add an empty argument for each one */
 		while (*sentence == ',') {
+			if (argc >= NMEA_ARGS_MAX) {
+				printf("NMEA: Dropping message with too many arguments\n");
+				return;
+			}
 			*sentence = '\0';
-			argv[argc] = sentence;
-			argc++;
+			argv[argc++] = sentence;
 			sentence++;
 		}
 
 		/* Store the beginning of this argument */
 		if (*sentence != '\0') {
-			argv[argc] = sentence;
-			argc++;
+			if (argc >= NMEA_ARGS_MAX) {
+				printf("NMEA: Dropping message with too many arguments\n");
+				return;
+			}
+			argv[argc++] = sentence;
 		}
 
 		/* Skip characters until past argument (indicated by a separating comma or a 0-termination) */
@@ -117,6 +133,7 @@ static void proc_nmea_char(char byte)
 		case '$':
 			receiving = 1;
 			len = 0;
+			return;
 		}
 	}
 
@@ -125,7 +142,7 @@ static void proc_nmea_char(char byte)
 	    byte == '\r') {
 		receiving = 0;
 		sentence[len] = '\0';
-		proc_nmea_sentence(&sentence[1], len - 1);
+		proc_nmea_sentence(sentence, len);
 		return;
 	}
 
