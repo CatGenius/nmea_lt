@@ -326,7 +326,64 @@ static void interrupt isr(void)
 
 static void handle_gprmc(int argc, char *argv[])
 {
-	printf("time = '%s', date = '%s'\n", argv[1], argv[9]);
+	char           *time = argv[1];
+	char           *date = argv[9];
+	unsigned long  value;
+	char           *endptr;
+	struct tm      utc;
+	struct tm      local;
+	time_t         utc_secs;
+	time_t         local_secs;
+
+	value = strtoul(&time[4], &endptr, 10);
+	if (*endptr != '\0')
+		return;
+	utc.tm_sec = value;
+	time[4] = '\0';
+
+	value = strtoul(&time[2], &endptr, 10);
+	if (*endptr != '\0')
+		return;
+	utc.tm_min = value;
+	time[2] = '\0';
+
+	value = strtoul(&time[0], &endptr, 10);
+	if (*endptr != '\0')
+		return;
+	utc.tm_hour = value;
+
+	value = strtoul(&date[4], &endptr, 10);
+	if (*endptr != '\0')
+		return;
+	utc.tm_year = value + 100;
+	date[4] = '\0';
+
+	value = strtoul(&date[2], &endptr, 10);
+	if (*endptr != '\0')
+		return;
+	utc.tm_mon = value - 1;
+	date[2] = '\0';
+
+	value = strtoul(&date[0], &endptr, 10);
+	if (*endptr != '\0')
+		return;
+	utc.tm_mday = value;
+
+	/* Convert broken-down UTC time to seconds and complete with weekday */
+	/* (Caveat: XC8 mktime) does NOT fill out tm_wday or tm_yday */
+	utc_secs = mktime(&utc);
+//	if ()
+
+	/* Set the DST flag (tzset() is not supported) */
+	mkdst(utc_secs, &local);
+
+	/* Add local time offset and daylight saving time to UTC to get local time */
+	local_secs = utc_secs +
+	             LT_OFFSET_S +
+	             ((local.tm_isdst > 0) ? DST_OFFSET_S : 0);
+
+//	printf("time = %d:%d:%d, date = %d/%d/%d\n", utc.tm_hour, utc.tm_min, utc.tm_sec, utc.tm_mday, utc.tm_mon, utc.tm_year);
+	printf("time = %ld\n", local_secs);
 }
 
 
@@ -335,48 +392,9 @@ static void handle_gprmc(int argc, char *argv[])
 /******************************************************************************/
 void main(void)
 {
-	struct tm  utc;
-	struct tm  local;
-	time_t     utc_secs;
-	time_t     local_secs;
-
 	disable_peripherals();
 	init_clocks();
 	init_pins();
-
-	time_zone = TIME_ZONE;
-
-	utc.tm_sec   = 0;   /* The number of seconds after the minute, normally in the
-		               range 0 to 59, but can be up to 60 to allow for leap sec-
-		               onds. */
-	utc.tm_min   = 20;  /* The number of minutes after the hour, in the range 0 to 59. */
-	utc.tm_hour  = 20;  /* The number of hours past midnight, in the range 0 to 23. */
-	utc.tm_mday  = 11;  /* The day of the month, in the range 1 to 31. */
-	utc.tm_mon   =  7;  /* The number of months since January, in the range 0 to 11. */
-	utc.tm_year  = 120; /* The number of years since 1900. */
-	utc.tm_wday  = -1;  /* The number of days since Sunday, in the range 0 to 6. */
-	utc.tm_yday  = -1;  /* The number of days since January 1, in the range 0 to 365. */
-	utc.tm_isdst = -1;  /* A flag that indicates whether daylight saving time is in
-		               effect at the time described.  The value is positive if
-		               daylight saving time is in effect, zero if it is not, and
-			       negative if the information is not available. */
-
-	/* Convert UTC time to seconds and complete with weekday */
-	/* (Caveat: XC8 mktime) does NOT fill out tm_wday or tm_yday */
-	utc_secs = mktime(&utc);
-
-	/* Set the DST flag (tzset() is not supported) */
-	mkdst(utc_secs, &local);
-
-	local_secs = utc_secs +
-	             LT_OFFSET_S +
-	             ((local.tm_isdst > 0) ? DST_OFFSET_S : 0);
-//	printf("local_secs = %ld\n", local_secs);
-
-//	printf("diff = %ld\n", local_secs - utc_secs);
-
-//	localtime();
-//	gmtime();
 
 	/* Initialize the serial port for stdio */
 	uart2_init(115200, 0);

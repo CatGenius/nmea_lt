@@ -12,7 +12,7 @@
 /******************************************************************************/
 /*** Macros                                                                 ***/
 /******************************************************************************/
-#define NMEA_ARGS_MAX  16
+#define NMEA_ARGS_MAX  12
 
 
 /******************************************************************************/
@@ -58,9 +58,10 @@ static void proc_nmea_sentence(char *sentence, char len)
 	}
 
 	checksum = strtoul(&sentence[len - 2], &endptr, 16);
-	if (*endptr != '\0')
-		/* Trailing garbage */
+	if (*endptr != '\0') {
+		printf("NMEA: Dropping message non-numerical checksum '%s'\n", sentence);
 		return;
+	}
 
 	for (ndx = 0; ndx < len - 3; ndx++)
 		calcsum ^= sentence[ndx];
