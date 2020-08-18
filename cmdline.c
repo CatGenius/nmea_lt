@@ -11,7 +11,7 @@
 #include <string.h>
 
 #include "cmdline.h"
-#include "serial.h"
+#include "uart2.h"
 
 
 /******************************************************************************/

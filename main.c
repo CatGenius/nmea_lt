@@ -7,8 +7,8 @@
 #include <time.h>
 
 #include "cmdline.h"
-#include "serial.h"
-#include "nmea_uart.h"
+#include "uart1.h"
+#include "uart2.h"
 
 
 /******************************************************************************/
