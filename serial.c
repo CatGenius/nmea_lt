@@ -36,10 +36,10 @@ struct queue {
 /* Global data                                                                */
 /******************************************************************************/
 #ifdef RXBUFFER
-struct queue		rx;
+static struct queue		rx;
 #endif /* RXBUFFER */
 #ifdef TXBUFFER
-struct queue		tx;
+static struct queue		tx;
 #endif /* TXBUFFER */
 
 
