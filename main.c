@@ -305,9 +305,9 @@ static void interrupt isr(void)
 
 	/* (E)USART 1 interrupts */
 	if (RC1IF)
-		nmea_uart_rx_isr();
+		uart1_rx_isr();
 	if (TX1IF)
-		nmea_uart_tx_isr();
+		uart1_tx_isr();
 
 	/* (E)USART 2 interrupts */
 	if (RC2IF)
@@ -367,7 +367,7 @@ void main(void)
 
 	/* Initialize the serial port for stdio */
 	serial_init(115200, 0);
-	nmea_uart_init(4800, 0);
+	uart1_init(4800, 0);
 		
 	printf("\n*** NMEA local time converter ***\n");
 	if (!nPOR)
@@ -395,7 +395,7 @@ void main(void)
 	/* Execute the run loop */
 	for(;;) {
 		cmdline_work();
-		nmea_work();
+		uart1_work();
 		CLRWDT();
 	}
 }

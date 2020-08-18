@@ -1,19 +1,19 @@
 /******************************************************************************/
-/* File    : nmea_uart.h                                                      */
-/* Function: Header file of 'nmea_uart.c'                                     */
+/* File    : uart1.h                                                          */
+/* Function: Header file of 'uart1.c'                                         */
 /* Author  : Robert Delien                                                    */
 /* Copyright (C) 2010, Clockwork Engineering                                  */
 /******************************************************************************/
-#ifndef NMEA_UART_H
-#define NMEA_UART_H
+#ifndef UART1_H
+#define UART1_H
 
 
-void           nmea_uart_init  (unsigned long  bitrate,
-                                unsigned char  flow);
-void           nmea_uart_term  (void);
-void           nmea_uart_rx_isr(void);
-void           nmea_uart_tx_isr(void);
-void           nmea_work       (void);
+void           uart1_init  (unsigned long  bitrate,
+                            unsigned char  flow);
+void           uart1_term  (void);
+void           uart1_rx_isr(void);
+void           uart1_tx_isr(void);
+void           uart1_work  (void);
 
 
-#endif /* NMEA_UART_H */
+#endif /* UART1_H */

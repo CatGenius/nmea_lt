@@ -48,7 +48,7 @@ static struct queue		tx;
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
-void nmea_uart_init(unsigned long bitrate, unsigned char flow)
+void uart1_init(unsigned long bitrate, unsigned char flow)
 {
 #ifdef RXBUFFER
 	rx.head        = 0;
@@ -99,7 +99,7 @@ void nmea_uart_init(unsigned long bitrate, unsigned char flow)
 }
 
 
-void nmea_uart_term(void)
+void uart1_term(void)
 {
 #ifdef RXBUFFER
 	RC1IE = 0;	/* Disable rx interrupt */
@@ -123,7 +123,7 @@ void nmea_uart_term(void)
 }
 
 
-void nmea_uart_rx_isr(void)
+void uart1_rx_isr(void)
 {
 #ifdef RXBUFFER
 	/* Handle overflow errors */
@@ -178,7 +178,7 @@ void nmea_uart_rx_isr(void)
 }
 
 
-void nmea_uart_tx_isr(void)
+void uart1_tx_isr(void)
 {
 #ifdef TXBUFFER
 	/* Copy the character from the TX queue into the TX register */
@@ -193,7 +193,7 @@ void nmea_uart_tx_isr(void)
 }
 
 
-static void name_uart_putch(char ch)
+static void uart1_putch(char ch)
 {
 #ifdef TXBUFFER
 	unsigned char	queued = 0;
@@ -244,7 +244,7 @@ static void name_uart_putch(char ch)
 }
 
 
-static char name_uart_getch(void)
+static char uart1_getch(void)
 {
 #ifdef RXBUFFER
 	char  result = EOF;
@@ -415,10 +415,10 @@ static void proc_nmea_char(char byte)
 }
 
 
-void nmea_work(void)
+void uart1_work(void)
 {
 	char  byte;
 
-	while ((byte = name_uart_getch()) != (char)EOF)
+	while ((byte = uart1_getch()) != (char)EOF)
 		proc_nmea_char(byte);
 }
