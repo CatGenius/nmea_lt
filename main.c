@@ -8,6 +8,7 @@
 
 #include "cmdline.h"
 #include "serial.h"
+#include "nmea_uart.h"
 
 
 /******************************************************************************/
@@ -259,7 +260,8 @@ static void init_clocks(void)
 static void init_pins(void)
 {
 	/* Disable analog input on pins used digitally */
-	ANSELC &= ~(1 << 1);
+	ANSELC &= ~((1 << 1) |  /* Pin RC1 */
+	            (1 << 5));  /* Pin RC5 */
 
 	/* Unlock Peripheral Pin Select module (PPS) */
 	PPSLOCK = 0x55;
@@ -267,7 +269,7 @@ static void init_pins(void)
 	PPSLOCKbits.PPSLOCKED = 0;
 
 	/* UART1 */
-	RX1DTPPS = 0x15;  /* Connect RX2 to RC5 input pin */
+	RX1DTPPS = 0x15;  /* Connect RX1 to RC5 input pin */
 	RC4PPS   = 0x0f;  /* Connect RC4 output to TX1 */
 
 	/* UART2 */
@@ -302,10 +304,10 @@ static void interrupt isr(void)
 	}
 
 	/* (E)USART 1 interrupts */
-//	if (RC1IF)
-//		serial_rx_isr();
-//	if (TX1IF)
-//		serial_tx_isr();
+	if (RC1IF)
+		nmea_uart_rx_isr();
+	if (TX1IF)
+		nmea_uart_tx_isr();
 
 	/* (E)USART 2 interrupts */
 	if (RC2IF)
@@ -365,7 +367,8 @@ void main(void)
 
 	/* Initialize the serial port for stdio */
 	serial_init(115200, 0);
-
+	nmea_uart_init(4800, 0);
+		
 	printf("\n*** NMEA local time converter ***\n");
 	if (!nPOR)
 		printf("Power-on reset\n");
@@ -392,7 +395,7 @@ void main(void)
 	/* Execute the run loop */
 	for(;;) {
 		cmdline_work();
-
+		nmea_work();
 		CLRWDT();
 	}
 }
