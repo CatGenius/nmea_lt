@@ -32,10 +32,16 @@
 /* Globals                                                                    */
 /******************************************************************************/
 const struct command_t  commands[] = {
-	{"?",    cmdline_help},
-	{"help", cmdline_help},
-	{"echo", cmdline_echo},
-	{"",     NULL}
+	{"?",     cmdline_help},
+	{"help",  cmdline_help},
+	{"echo",  cmdline_echo},
+	{NULL,    NULL}
+};
+
+static void handle_gprmc(int argc, char *argv[]);
+const struct nmea_t     nmea[] = {
+	{"GPRMC", handle_gprmc},
+	{NULL,    NULL}
 };
 
 
@@ -315,6 +321,12 @@ static void interrupt isr(void)
 		uart2_rx_isr();
 	if (TX2IF)
 		uart2_tx_isr();
+}
+
+
+static void handle_gprmc(int argc, char *argv[])
+{
+	printf("time = '%s', date = '%s'\n", argv[1], argv[9]);
 }
 
 

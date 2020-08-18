@@ -6,24 +6,36 @@
 
 #include "uart1.h"
 
+#include "nmea.h"
+
+
+/******************************************************************************/
+/*** Global Data                                                            ***/
+/******************************************************************************/
+extern const struct nmea_t  nmea[];
+
 
 /******************************************************************************/
 /* Static functions                                                           */
 /******************************************************************************/
-static void proc_nmea(int argc, char *argv[])
+static int keyword2index(char *keyword)
 {
-	if (!strcmp(argv[0], "GPRMC")) {
-		printf("time: '%s'\n", argv[1]);
-		printf("date: '%s'\n", argv[9]);
-	} else
-		printf("NMEA: unsupported sentence '%s'\n", argv[0]);
+	int  ndx = 0;
+
+	while (nmea[ndx].keyword) {
+		if (!strcmp (keyword, nmea[ndx].keyword))
+			return ndx;
+		ndx++;
+	}
+
+	return (-1);
 }
 
 
 #define NMEA_ARGS_MAX  16
 static void proc_nmea_sentence(char *sentence, char len)
 {
-	unsigned char  ndx;
+	int            ndx;
 	char           *endptr;
 	unsigned long  checksum;
 	unsigned char  calcsum = 0;
@@ -71,14 +83,19 @@ static void proc_nmea_sentence(char *sentence, char len)
 			sentence++;
 		}
 
-		/* If the argument was termintated by a separating comma, replace is with a 0-termination */
+		/* If the argument was terminated by a separating comma, replace is with a 0-termination */
 		if (*sentence == ',') {
 			*sentence = '\0';
 			sentence++;
 		}
 	}
 
-	proc_nmea(argc, argv);
+	if ((ndx = keyword2index(argv[0])) < 0) {
+		printf("NMEA: unsupported sentence '%s'\n", argv[0]);
+		return;
+	}
+		
+	nmea[ndx].function(argc, argv);
 }
 
 
