@@ -6,9 +6,10 @@
 #include <string.h>
 #include <time.h>
 
-#include "cmdline.h"
 #include "uart1.h"
 #include "uart2.h"
+#include "cmdline.h"
+#include "nmea.h"
 
 
 /******************************************************************************/
@@ -395,7 +396,7 @@ void main(void)
 	/* Execute the run loop */
 	for(;;) {
 		cmdline_work();
-		uart1_work();
+		nmea_work();
 		CLRWDT();
 	}
 }

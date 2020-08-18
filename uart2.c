@@ -48,6 +48,8 @@ static struct queue		tx;
 /******************************************************************************/
 void uart2_init(unsigned long bitrate, unsigned char flow)
 {
+	unsigned long	divider = INTDIV(INTDIV(_XTAL_FREQ, 4UL), bitrate)-1;
+
 #ifdef RXBUFFER
 	rx.head        = 0;
 	rx.tail        = 0;
@@ -63,15 +65,8 @@ void uart2_init(unsigned long bitrate, unsigned char flow)
 #endif /* TXBUFFER */
 
 	BAUD2CONbits.BRG16 = 1;	/* Use 16-bit bit rate generation */
-	if (BAUD2CONbits.BRG16) {
-		/* 16-bit bit rate generation */
-		unsigned long	divider = INTDIV(INTDIV(_XTAL_FREQ, 4UL), bitrate)-1;
-
-		SP2BRGL =  divider & 0x00FF;
-		SP2BRGH = (divider & 0xFF00) >> 8;
-	} else
-		/* 8-bit bit rate generation */
-		SPBRG = INTDIV(INTDIV(_XTAL_FREQ, bitrate), 16UL)-1;
+	SP2BRGL =  divider & 0x00FF;
+	SP2BRGH = (divider & 0xFF00) >> 8;
 
 	TX2STAbits.CSRC = 1;	/* Clock source from BRG */
 	TX2STAbits.BRGH = 1;	/* High-speed bit rate generation */

@@ -13,7 +13,8 @@ void           uart1_init  (unsigned long  bitrate,
 void           uart1_term  (void);
 void           uart1_rx_isr(void);
 void           uart1_tx_isr(void);
-void           uart1_work  (void);
+void           uart1_putch(char ch);
+char           uart1_getch(void);
 
 
 #endif /* UART1_H */
