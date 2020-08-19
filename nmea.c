@@ -37,6 +37,18 @@ extern const struct nmea_t  nmea[];
 /******************************************************************************/
 /* Static functions                                                           */
 /******************************************************************************/
+static unsigned char calc_checksum(char *buf, unsigned char len)
+{
+	unsigned char  ndx;
+	unsigned char  calcsum = 0;
+
+	for (ndx = 0; ndx < len; ndx++)
+		calcsum ^= buf[ndx];
+
+	return calcsum;
+}
+
+
 static int keyword2index(char *keyword)
 {
 	int  ndx = 0;
@@ -56,7 +68,7 @@ static void proc_nmea_sentence(char *sentence, char len)
 	int            ndx;
 	char           *endptr;
 	unsigned long  checksum;
-	unsigned char  calcsum = 0;
+	unsigned char  calcsum;
 	int            argc = 0;
 	char           *argv[NMEA_ARGS_MAX];
 
@@ -76,8 +88,7 @@ static void proc_nmea_sentence(char *sentence, char len)
 		return;
 	}
 
-	for (ndx = 0; ndx < len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN; ndx++)
-		calcsum ^= sentence[ndx];
+	calcsum = calc_checksum(sentence, len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN);
 	if (calcsum != checksum) {
 		printf("NMEA: Dropping message with bad checksum 0x%.2x '%s'\n", calcsum, sentence);
 		return;
