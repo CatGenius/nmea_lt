@@ -215,3 +215,48 @@ void nmea_work(void)
 	while ((byte = uart1_getch()) != (char)EOF)
 		proc_nmea_char(byte);
 }
+
+
+void nmea_send(int argc, char *argv[])
+{
+	static char    sentence[NMEA_LEN_MAX + 1] = { NMEA_HEADER };
+	unsigned char  sentence_ndx = NMEA_HEADER_LEN;
+	unsigned char  send_ndx;
+	int            arg_ndx = 0;
+
+	for (;;) {
+		size_t  len = strlen(argv[arg_ndx]);
+
+		/* Test if there's space for the argument */
+		if (sentence_ndx + len > NMEA_LEN_MAX - NMEA_TRAILER_LEN - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN)
+			return;
+
+		/* Add the argument */
+		strcpy(&sentence[sentence_ndx], argv[arg_ndx]);
+		sentence_ndx += len;
+
+		if (arg_ndx + 1 >= argc)
+			break;
+
+		/* Test if there's space for separator */
+		if (sentence_ndx + len > NMEA_LEN_MAX - NMEA_TRAILER_LEN - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN)
+			return;
+
+		sentence[sentence_ndx] = NMEA_SEPARATOR;
+		sentence_ndx++;
+
+		arg_ndx++;
+	}
+
+	/* Add the checksum separator, the checksum and the trailer */
+	sprintf(&sentence[sentence_ndx], "%c%.2X%c%c", NMEA_CHECKSUM_SEPARATOR, calc_checksum(&sentence[NMEA_HEADER_LEN], sentence_ndx - NMEA_HEADER_LEN), NMEA_TRAILER1, NMEA_TRAILER2);
+	sentence_ndx += NMEA_CHECKSUM_SEPARATOR_LEN + NMEA_CHECKSUM_LEN + NMEA_TRAILER_LEN;
+
+#ifdef DEBUG
+	printf("Sending '%s'\n", sentence);
+#endif /* DEBUG */
+
+	/* Send the sentence to the serial port */
+	for (send_ndx = 0; send_ndx < sentence_ndx; sentence_ndx++)
+		uart1_putch(sentence[send_ndx]);
+}
