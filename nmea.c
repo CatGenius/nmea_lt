@@ -12,6 +12,8 @@
 /******************************************************************************/
 /*** Macros                                                                 ***/
 /******************************************************************************/
+//#define                    DEBUG
+
 #define NMEA_HEADER        '$'
 #define NMEA_TRAILER1      '\r'
 #define NMEA_TRAILER2      '\n'
@@ -73,24 +75,32 @@ static void proc_nmea_sentence(char *sentence, unsigned char len)
 	char           *argv[NMEA_ARGS_MAX];
 
 	if (len < NMEA_CHECKSUM_SEPARATOR_LEN + NMEA_CHECKSUM_LEN) {
+#ifdef DEBUG
 		printf("NMEA: Dropping under-sized sentence '%s'\n", sentence);
+#endif /* DEBUG */
 		return;
 	}
 
 	if (sentence[len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN] != NMEA_CHECKSUM_SEPARATOR) {
+#ifdef DEBUG
 		printf("NMEA: Dropping sentence without checksum separator '%s'\n", sentence);
+#endif /* DEBUG */
 		return;
 	}
 
 	checksum = strtoul(&sentence[len - NMEA_CHECKSUM_LEN], &endptr, 16);
 	if (*endptr != '\0') {
+#ifdef DEBUG
 		printf("NMEA: Dropping sentence with non-numerical checksum '%s'\n", sentence);
+#endif /* DEBUG */
 		return;
 	}
 
 	calcsum = calc_checksum(sentence, len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN);
 	if (calcsum != checksum) {
+#ifdef DEBUG
 		printf("NMEA: Dropping sentence with bad checksum 0x%.2x '%s'\n", calcsum, sentence);
+#endif /* DEBUG */
 		return;
 	}
 	sentence[len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN] = '\0';
@@ -101,7 +111,9 @@ static void proc_nmea_sentence(char *sentence, unsigned char len)
 		/* Replace leading separators with 0-terminations and add an empty argument for each one */
 		while (*sentence == NMEA_SEPARATOR) {
 			if (argc >= NMEA_ARGS_MAX) {
+#ifdef DEBUG
 				printf("NMEA: Dropping sentence with too many arguments\n");
+#endif /* DEBUG */
 				return;
 			}
 			*sentence = '\0';
@@ -112,7 +124,9 @@ static void proc_nmea_sentence(char *sentence, unsigned char len)
 		/* Store the beginning of this argument */
 		if (*sentence != '\0') {
 			if (argc >= NMEA_ARGS_MAX) {
+#ifdef DEBUG
 				printf("NMEA: Dropping sentence with too many arguments\n");
+#endif /* DEBUG */
 				return;
 			}
 			argv[argc++] = sentence;
@@ -132,7 +146,9 @@ static void proc_nmea_sentence(char *sentence, unsigned char len)
 	}
 
 	if ((ndx = keyword2index(argv[0])) < 0) {
+#ifdef DEBUG
 		printf("NMEA: unsupported sentence '%s'\n", argv[0]);
+#endif /* DEBUG */
 		return;
 	}
 
@@ -153,7 +169,9 @@ static void proc_nmea_char(char byte)
 		switch (byte) {
 		default:
 		case NMEA_TRAILER1:
+#ifdef DEBUG
 			printf("NMEA: Discarding OOB byte 0x%.2x\n", byte);
+#endif /* DEBUG */
 		case NMEA_TRAILER2:
 			return;
 
@@ -180,7 +198,9 @@ static void proc_nmea_char(char byte)
 	if (++len >= NMEA_DATA_LEN_MAX + NMEA_CHECKSUM_SEPARATOR_LEN + NMEA_CHECKSUM_LEN) {
 		receiving = 0;
 		sentence[len] = '\0';
+#ifdef DEBUG
 		printf("NMEA: Discarding over-sized sentence '%s'\n", sentence);
+#endif /* DEBUG */
 	}
 }
 
