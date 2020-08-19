@@ -73,24 +73,24 @@ static void proc_nmea_sentence(char *sentence, unsigned char len)
 	char           *argv[NMEA_ARGS_MAX];
 
 	if (len < NMEA_CHECKSUM_SEPARATOR_LEN + NMEA_CHECKSUM_LEN) {
-		printf("NMEA: Dropping under-sized message '%s'\n", sentence);
+		printf("NMEA: Dropping under-sized sentence '%s'\n", sentence);
 		return;
 	}
 
 	if (sentence[len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN] != NMEA_CHECKSUM_SEPARATOR) {
-		printf("NMEA: Dropping message without checksum separator '%s'\n", sentence);
+		printf("NMEA: Dropping sentence without checksum separator '%s'\n", sentence);
 		return;
 	}
 
 	checksum = strtoul(&sentence[len - NMEA_CHECKSUM_LEN], &endptr, 16);
 	if (*endptr != '\0') {
-		printf("NMEA: Dropping message non-numerical checksum '%s'\n", sentence);
+		printf("NMEA: Dropping sentence with non-numerical checksum '%s'\n", sentence);
 		return;
 	}
 
 	calcsum = calc_checksum(sentence, len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN);
 	if (calcsum != checksum) {
-		printf("NMEA: Dropping message with bad checksum 0x%.2x '%s'\n", calcsum, sentence);
+		printf("NMEA: Dropping sentence with bad checksum 0x%.2x '%s'\n", calcsum, sentence);
 		return;
 	}
 	sentence[len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN] = '\0';
@@ -101,7 +101,7 @@ static void proc_nmea_sentence(char *sentence, unsigned char len)
 		/* Replace leading separators with 0-terminations and add an empty argument for each one */
 		while (*sentence == NMEA_SEPARATOR) {
 			if (argc >= NMEA_ARGS_MAX) {
-				printf("NMEA: Dropping message with too many arguments\n");
+				printf("NMEA: Dropping sentence with too many arguments\n");
 				return;
 			}
 			*sentence = '\0';
@@ -112,7 +112,7 @@ static void proc_nmea_sentence(char *sentence, unsigned char len)
 		/* Store the beginning of this argument */
 		if (*sentence != '\0') {
 			if (argc >= NMEA_ARGS_MAX) {
-				printf("NMEA: Dropping message with too many arguments\n");
+				printf("NMEA: Dropping sentence with too many arguments\n");
 				return;
 			}
 			argv[argc++] = sentence;
