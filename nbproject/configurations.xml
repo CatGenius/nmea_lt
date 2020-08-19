@@ -8,6 +8,7 @@
       <itemPath>uart1.h</itemPath>
       <itemPath>uart2.h</itemPath>
       <itemPath>nmea.h</itemPath>
+      <itemPath>mkdst.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -21,6 +22,7 @@
       <itemPath>uart1.c</itemPath>
       <itemPath>uart2.c</itemPath>
       <itemPath>nmea.c</itemPath>
+      <itemPath>mkdst.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

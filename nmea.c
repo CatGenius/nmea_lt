@@ -111,7 +111,7 @@ static void proc_nmea_sentence(char *sentence, char len)
 		printf("NMEA: unsupported sentence '%s'\n", argv[0]);
 		return;
 	}
-		
+
 	nmea[ndx].function(argc, argv);
 }
 
@@ -153,7 +153,7 @@ static void proc_nmea_char(char byte)
 	if (++len > 81) {
 		receiving = 0;
 		sentence[len] = '\0';
-		printf("NMEA: Discarding over-sized sentence '%s'\n", sentence);		
+		printf("NMEA: Discarding over-sized sentence '%s'\n", sentence);
 	}
 }
 
