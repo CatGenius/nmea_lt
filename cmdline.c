@@ -11,7 +11,7 @@
 #include <string.h>
 
 #include "cmdline.h"
-#include "serial.h"
+#include "uart2.h"
 
 
 /******************************************************************************/
@@ -35,7 +35,7 @@ static int cmd2index(char *cmd)
 {
 	int  index = 0;
 
-	while (commands[index].function) {
+	while (commands[index].cmd) {
 		if (!strcmp (cmd, commands[index].cmd))
 			return index;
 		index++;
