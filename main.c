@@ -16,6 +16,7 @@
 /******************************************************************************/
 /* Macros                                                                     */
 /******************************************************************************/
+#define EPOCH_YEAR              (70)
 #define MINUTES_PER_HOUR        (60)
 #define SECONDS_PER_MINUTES     (60)
 #define SECONDS_PER_HOUR        (MINUTES_PER_HOUR * SECONDS_PER_MINUTES)
@@ -49,6 +50,86 @@ const struct nmea_t     nmea[] = {
 /******************************************************************************/
 /* Static functions                                                           */
 /******************************************************************************/
+static void update_rtc(time_t utc)
+{
+	printf("time = %ld\n", utc);
+}
+
+
+static int get_octets(char *str, int *octet[])
+{
+	int  ndx;
+
+	/* Walk the given string, back to front, two digits at a time */
+	for (ndx = 4; ndx >= 0; ndx -= 2) {
+		char           *endptr;
+		unsigned long  value = strtoul(&str[ndx], &endptr, 10);  /* Convert this part of the string to a numerical value */
+
+		/* Test for trailing garbage */
+		if (*endptr != '\0') {
+			printf("Error converting %s to a number\n", &str[ndx]);
+			return -1;
+		}
+
+		/* Copy the numerical value into the corresponding octet */
+		*octet[ndx >> 1] = value;
+
+		/* Overwrite the current part of the sting with a 0-terminator, so after we move back to the front, the string stops here */
+		str[ndx] = '\0';
+	}
+
+	return 0;
+}
+
+
+static void handle_gprmc(int argc, char *argv[])
+{
+	struct tm  utc;
+	struct tm  local;
+	time_t     utc_secs;
+	time_t     local_secs;
+	int        *octet[3];
+	int        ndx;
+
+	/* Get the 3 octets holding the time from the time argument */
+	octet[0] = &utc.tm_hour;
+	octet[1] = &utc.tm_min;
+	octet[2] = &utc.tm_sec;
+	if (get_octets(argv[1], octet))
+		return;
+
+	/* Get the 3 octets holding the date from the date argument */
+	octet[0] = &utc.tm_mday;
+	octet[1] = &utc.tm_mon;
+	octet[2] = &utc.tm_year;
+	if (get_octets(argv[9], octet))
+		return;
+
+	/* Months are 0-based */
+	utc.tm_mon--;
+	/* Years are from Epoch */
+	if (utc.tm_year < EPOCH_YEAR)
+		utc.tm_year += 100;
+
+	/* Convert broken-down UTC time to seconds and complete with weekday */
+	/* (Caveat: XC8 mktime) does NOT fill out tm_wday or tm_yday */
+	if ((utc_secs = mktime(&utc)) < 0)
+		return;
+
+	update_rtc(utc_secs);
+
+	/* Set the DST flag (tzset() is not supported) */
+	mkdst(utc_secs, &local);
+
+	/* Add local time offset and daylight saving time to UTC to get local time */
+	local_secs = utc_secs +
+	             LT_OFFSET_S +
+	             ((local.tm_isdst > 0) ? DST_OFFSET_S : 0);
+
+	return;
+}
+
+
 static void disable_peripherals(void)
 {
 /*
@@ -142,69 +223,6 @@ static void init_interrupt(void)
 
 	/* Enable interrupts */
 	GIE = 1;
-}
-
-
-static void handle_gprmc(int argc, char *argv[])
-{
-	char           *time = argv[1];
-	char           *date = argv[9];
-	unsigned long  value;
-	char           *endptr;
-	struct tm      utc;
-	struct tm      local;
-	time_t         utc_secs;
-	time_t         local_secs;
-
-	value = strtoul(&time[4], &endptr, 10);
-	if (*endptr != '\0')
-		return;
-	utc.tm_sec = value;
-	time[4] = '\0';
-
-	value = strtoul(&time[2], &endptr, 10);
-	if (*endptr != '\0')
-		return;
-	utc.tm_min = value;
-	time[2] = '\0';
-
-	value = strtoul(&time[0], &endptr, 10);
-	if (*endptr != '\0')
-		return;
-	utc.tm_hour = value;
-
-	value = strtoul(&date[4], &endptr, 10);
-	if (*endptr != '\0')
-		return;
-	utc.tm_year = value + 100;
-	date[4] = '\0';
-
-	value = strtoul(&date[2], &endptr, 10);
-	if (*endptr != '\0')
-		return;
-	utc.tm_mon = value - 1;
-	date[2] = '\0';
-
-	value = strtoul(&date[0], &endptr, 10);
-	if (*endptr != '\0')
-		return;
-	utc.tm_mday = value;
-
-	/* Convert broken-down UTC time to seconds and complete with weekday */
-	/* (Caveat: XC8 mktime) does NOT fill out tm_wday or tm_yday */
-	utc_secs = mktime(&utc);
-//	if ()
-
-	/* Set the DST flag (tzset() is not supported) */
-	mkdst(utc_secs, &local);
-
-	/* Add local time offset and daylight saving time to UTC to get local time */
-	local_secs = utc_secs +
-	             LT_OFFSET_S +
-	             ((local.tm_isdst > 0) ? DST_OFFSET_S : 0);
-
-//	printf("time = %d:%d:%d, date = %d/%d/%d\n", utc.tm_hour, utc.tm_min, utc.tm_sec, utc.tm_mday, utc.tm_mon, utc.tm_year);
-	printf("time = %ld\n", local_secs);
 }
 
 
