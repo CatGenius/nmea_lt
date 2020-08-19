@@ -9,8 +9,8 @@
 #define _XTAL_FREQ 32000000
 
 #define RXBUFFER			/* Use buffers for received characters */
-//#define TXBUFFER			/* Use buffers for transmitted character (MAKE SURE TO ENABLE INTERRUPTS BEFORE TRANSMITTING ANYTHING) */
-#define BUFFER_SIZE		8	/* Buffer size. Has to be a power of 2 and congruent with queue.head and queue.tail or roll-overs need to be taken into account */
+#define TXBUFFER			/* Use buffers for transmitted character (MAKE SURE TO ENABLE INTERRUPTS BEFORE TRANSMITTING ANYTHING) */
+#define BUFFER_SIZE		64	/* Buffer size. Has to be a power of 2 and congruent with queue.head and queue.tail or roll-overs need to be taken into account */
 #define BUFFER_SPARE		2	/* Minumum number of free positions before issuing Xoff */
 
 #define INTDIV(n,d)             ((n)+((((n)>=0&&(d)>=0)||((n)<0&&(d)<0))?((d)/2):-((d)/2)))/(d)  /* Macro for integer division with proper round-off (BEWARE OF OVERFLOW!) */
@@ -25,8 +25,8 @@
 /******************************************************************************/
 struct queue {
 	char		buffer[BUFFER_SIZE];	/* Here's where the data goes */
-	unsigned	head		: 3;	/* Index to a currently free position in buffer */
-	unsigned	tail		: 3;	/* Index to the oldest occupied position in buffer, if not equal to head */
+	unsigned	head		: 6;	/* Index to a currently free position in buffer */
+	unsigned	tail		: 6;	/* Index to the oldest occupied position in buffer, if not equal to head */
 	unsigned	xon_enabled	: 1;	/* Specifies if Xon/Xoff should be issued/adhered to */
 	unsigned	xon_state	: 1;	/* Keeps track of current Xon/Xoff state for this queue */
 };
