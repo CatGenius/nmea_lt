@@ -83,7 +83,7 @@ static void proc_nmea_sentence(char *sentence, char len)
 		return;
 	}
 	sentence[len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN] = '\0';
-	len -= NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN;
+	len -= NMEA_CHECKSUM_LEN + NMEA_CHECKSUM_SEPARATOR_LEN;
 
 	/* Build argument list */
 	while (*sentence != '\0') {
