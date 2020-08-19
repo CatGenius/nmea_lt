@@ -63,7 +63,7 @@ static int keyword2index(char *keyword)
 }
 
 
-static void proc_nmea_sentence(char *sentence, char len)
+static void proc_nmea_sentence(char *sentence, unsigned char len)
 {
 	int            ndx;
 	char           *endptr;
@@ -145,7 +145,7 @@ static void proc_nmea_char(char byte)
 	static char           sentence[NMEA_DATA_LEN_MAX +
 	                               NMEA_CHECKSUM_SEPARATOR_LEN +
 	                               NMEA_CHECKSUM_LEN + 1];
-	static char           len;
+	static unsigned char  len;
 	static unsigned char  receiving = 0;
 
 	/* Test if we need to start receiving */
