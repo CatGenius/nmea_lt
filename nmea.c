@@ -12,7 +12,20 @@
 /******************************************************************************/
 /*** Macros                                                                 ***/
 /******************************************************************************/
-#define NMEA_ARGS_MAX  12
+#define NMEA_HEADER        '$'
+#define NMEA_TRAILER1      '\r'
+#define NMEA_TRAILER2      '\n'
+#define NMEA_SEPARATOR     ','
+#define NMEA_CHECKSUM_SEPARATOR  '*'
+
+#define NMEA_LEN_MAX       82
+#define NMEA_HEADER_LEN    1
+#define NMEA_CHECKSUM_SEPARATOR_LEN  1
+#define NMEA_CHECKSUM_LEN  2
+#define NMEA_TRAILER_LEN   2
+#define NMEA_DATA_LEN_MAX  (NMEA_LEN_MAX - NMEA_HEADER_LEN - NMEA_CHECKSUM_SEPARATOR_LEN - NMEA_CHECKSUM_LEN - NMEA_TRAILER_LEN)
+
+#define NMEA_ARGS_MAX      12
 
 
 /******************************************************************************/
@@ -47,35 +60,35 @@ static void proc_nmea_sentence(char *sentence, char len)
 	int            argc = 0;
 	char           *argv[NMEA_ARGS_MAX];
 
-	if (len < 4) {
+	if (len < NMEA_CHECKSUM_SEPARATOR_LEN + NMEA_CHECKSUM_LEN) {
 		printf("NMEA: Dropping under-sized message '%s'\n", sentence);
 		return;
 	}
 
-	if (sentence[len - 3] != '*') {
+	if (sentence[len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN] != NMEA_CHECKSUM_SEPARATOR) {
 		printf("NMEA: Dropping message without checksum separator '%s'\n", sentence);
 		return;
 	}
 
-	checksum = strtoul(&sentence[len - 2], &endptr, 16);
+	checksum = strtoul(&sentence[len - NMEA_CHECKSUM_LEN], &endptr, 16);
 	if (*endptr != '\0') {
 		printf("NMEA: Dropping message non-numerical checksum '%s'\n", sentence);
 		return;
 	}
 
-	for (ndx = 0; ndx < len - 3; ndx++)
+	for (ndx = 0; ndx < len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN; ndx++)
 		calcsum ^= sentence[ndx];
 	if (calcsum != checksum) {
 		printf("NMEA: Dropping message with bad checksum 0x%.2x '%s'\n", calcsum, sentence);
 		return;
 	}
-	sentence[len - 3] = '\0';
-	len -= 3;
+	sentence[len - NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN] = '\0';
+	len -= NMEA_CHECKSUM_LEN - NMEA_CHECKSUM_SEPARATOR_LEN;
 
 	/* Build argument list */
 	while (*sentence != '\0') {
-		/* Replace leading commas with 0-terminations and add an empty argument for each one */
-		while (*sentence == ',') {
+		/* Replace leading separators with 0-terminations and add an empty argument for each one */
+		while (*sentence == NMEA_SEPARATOR) {
 			if (argc >= NMEA_ARGS_MAX) {
 				printf("NMEA: Dropping message with too many arguments\n");
 				return;
@@ -94,14 +107,14 @@ static void proc_nmea_sentence(char *sentence, char len)
 			argv[argc++] = sentence;
 		}
 
-		/* Skip characters until past argument (indicated by a separating comma or a 0-termination) */
+		/* Skip characters until past argument (indicated by a separator or a 0-termination) */
 		while (*sentence != '\0' &&
-		       *sentence != ',') {
+		       *sentence != NMEA_SEPARATOR) {
 			sentence++;
 		}
 
-		/* If the argument was terminated by a separating comma, replace is with a 0-termination */
-		if (*sentence == ',') {
+		/* If the argument was terminated by a separator, replace is with a 0-termination */
+		if (*sentence == NMEA_SEPARATOR) {
 			*sentence = '\0';
 			sentence++;
 		}
@@ -118,7 +131,9 @@ static void proc_nmea_sentence(char *sentence, char len)
 
 static void proc_nmea_char(char byte)
 {
-	static char           sentence[82 + 1];
+	static char           sentence[NMEA_DATA_LEN_MAX +
+	                               NMEA_CHECKSUM_SEPARATOR_LEN +
+	                               NMEA_CHECKSUM_LEN + 1];
 	static char           len;
 	static unsigned char  receiving = 0;
 
@@ -126,12 +141,13 @@ static void proc_nmea_char(char byte)
 	if (!receiving) {
 		switch (byte) {
 		default:
-		case '\r':
+		case NMEA_TRAILER1:
 			printf("NMEA: Discarding OOB byte 0x%.2x\n", byte);
-		case '\n':
+		case NMEA_TRAILER2:
 			return;
 
-		case '$':
+		case NMEA_HEADER:
+			/* Start receiving and reset the received length */
 			receiving = 1;
 			len = 0;
 			return;
@@ -139,8 +155,8 @@ static void proc_nmea_char(char byte)
 	}
 
 	/* Test if we need to end receiving */
-	if (byte == '\n' ||
-	    byte == '\r') {
+	if (byte == NMEA_TRAILER2 ||
+	    byte == NMEA_TRAILER1) {
 		receiving = 0;
 		sentence[len] = '\0';
 		proc_nmea_sentence(sentence, len);
@@ -150,7 +166,7 @@ static void proc_nmea_char(char byte)
 	/* Copy the received byte into the current received sentence */
 	sentence[len] = byte;
 
-	if (++len > 81) {
+	if (++len >= NMEA_DATA_LEN_MAX + NMEA_CHECKSUM_SEPARATOR_LEN + NMEA_CHECKSUM_LEN) {
 		receiving = 0;
 		sentence[len] = '\0';
 		printf("NMEA: Discarding over-sized sentence '%s'\n", sentence);
