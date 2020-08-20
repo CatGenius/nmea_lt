@@ -14,20 +14,20 @@
 /******************************************************************************/
 //#define                    DEBUG
 
-#define NMEA_HEADER        '$'
-#define NMEA_TRAILER1      '\r'
-#define NMEA_TRAILER2      '\n'
-#define NMEA_SEPARATOR     ','
-#define NMEA_CHECKSUM_SEPARATOR  '*'
+#define NMEA_HEADER                  '$'
+#define NMEA_TRAILER1                '\r'
+#define NMEA_TRAILER2                '\n'
+#define NMEA_SEPARATOR               ','
+#define NMEA_CHECKSUM_SEPARATOR      '*'
 
-#define NMEA_LEN_MAX       82
-#define NMEA_HEADER_LEN    1
+#define NMEA_LEN_MAX                 82
+#define NMEA_HEADER_LEN              1
 #define NMEA_CHECKSUM_SEPARATOR_LEN  1
-#define NMEA_CHECKSUM_LEN  2
-#define NMEA_TRAILER_LEN   2
-#define NMEA_DATA_LEN_MAX  (NMEA_LEN_MAX - NMEA_HEADER_LEN - NMEA_CHECKSUM_SEPARATOR_LEN - NMEA_CHECKSUM_LEN - NMEA_TRAILER_LEN)
+#define NMEA_CHECKSUM_LEN            2
+#define NMEA_TRAILER_LEN             2
+#define NMEA_DATA_LEN_MAX            (NMEA_LEN_MAX - NMEA_HEADER_LEN - NMEA_CHECKSUM_SEPARATOR_LEN - NMEA_CHECKSUM_LEN - NMEA_TRAILER_LEN)
 
-#define NMEA_ARGS_MAX      12
+#define NMEA_ARGS_MAX                12
 
 
 /******************************************************************************/
@@ -257,6 +257,6 @@ void nmea_send(int argc, char *argv[])
 #endif /* DEBUG */
 
 	/* Send the sentence to the serial port */
-	for (send_ndx = 0; send_ndx < sentence_ndx; sentence_ndx++)
+	for (send_ndx = 0; send_ndx < sentence_ndx; send_ndx++)
 		uart1_putch(sentence[send_ndx]);
 }
