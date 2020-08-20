@@ -85,7 +85,8 @@ static int get_octets(char *str, int *octet[])
 static void handle_gprmc(int argc, char *argv[])
 {
 	struct tm  utc;
-	struct tm  local;
+	struct tm  dst;
+	struct tm  *local;
 	time_t     utc_secs;
 	time_t     local_secs;
 	int        *octet[3];
@@ -105,9 +106,9 @@ static void handle_gprmc(int argc, char *argv[])
 	if (get_octets(argv[9], octet))
 		return;
 
-	/* Months are 0-based */
+	/* Make month 0-based */
 	utc.tm_mon--;
-	/* Years are from Epoch */
+	/* Make year 1900-based */
 	if (utc.tm_year < EPOCH_YEAR)
 		utc.tm_year += 100;
 
@@ -116,15 +117,30 @@ static void handle_gprmc(int argc, char *argv[])
 	if ((utc_secs = mktime(&utc)) < 0)
 		return;
 
+	/* Send the newly received UTC time to the Real Time Clock */
 	update_rtc(utc_secs);
 
 	/* Set the DST flag (tzset() is not supported) */
-	mkdst(utc_secs, &local);
+	mkdst(utc_secs, &dst);
 
 	/* Add local time offset and daylight saving time to UTC to get local time */
 	local_secs = utc_secs +
 	             LT_OFFSET_S +
-	             ((local.tm_isdst > 0) ? DST_OFFSET_S : 0);
+	             ((dst.tm_isdst > 0) ? DST_OFFSET_S : 0);
+
+	/* Break down local time in seconds */
+	local = gmtime(&local_secs);
+
+	/* Make month 1-based */
+	local->tm_mon++;
+	/* Make year 1900/2000-based */
+	local->tm_year %= 100;
+
+	/* Print the broken-down time back into the corresponding arguments (snprintf is not supported, modulo 100 should offer enough protection) */
+	sprintf(argv[1], "%02d%02d%02d", local->tm_hour % 100, local->tm_min % 100, local->tm_sec % 100);
+	sprintf(argv[9], "%02d%02d%02d", local->tm_mday % 100, local->tm_mon % 100, local->tm_year);
+
+	nmea_send(argc, argv);
 
 	return;
 }

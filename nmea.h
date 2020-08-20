@@ -21,6 +21,7 @@ struct nmea_t {
 /*** Functions                                                              ***/
 /******************************************************************************/
 void nmea_work(void);
+void nmea_send(int argc, char *argv[]);
 
 
 #endif /* NMEA_H */
