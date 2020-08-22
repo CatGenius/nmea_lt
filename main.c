@@ -242,7 +242,7 @@ static void init_interrupt(void)
 }
 
 
-static void interrupt isr(void)
+static void __interrupt() isr(void)
 {
 	/* Timer 1 interrupt */
 	if (TMR1IF) {
