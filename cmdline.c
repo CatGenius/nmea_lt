@@ -11,7 +11,6 @@
 #include <string.h>
 
 #include "cmdline.h"
-#include "uart2.h"
 
 
 /******************************************************************************/
@@ -110,14 +109,14 @@ static void proc_char(char rxd)
 			curcolumn++;
 
 			if (localecho)
-				putch(rxd);
+				putchar(rxd);
 		} else
 			/* Sound the bell is the buffer is full */
 			if (localecho)
-				putch('\a');
+				putchar('\a');
 	} else if (rxd == '\r') {
 		if (localecho)
-			putch('\n');
+			putchar('\n');
 
 		if (curcolumn) {
 			/* Terminate string */
@@ -136,7 +135,7 @@ static void proc_char(char rxd)
 			curcolumn--;
 
 			if (localecho)
-				putch(rxd);
+				putchar(rxd);
 		}
 	}
 }
