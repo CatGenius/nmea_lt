@@ -4,6 +4,15 @@
 /******************************************************************************/
 /* Macros                                                                     */
 /******************************************************************************/
+#define DAYS_PER_WEEK       7
+#define HOURS_PER_DAY       24
+#define MINUTE_PER_HOUR     60
+#define SECONDS_PER_MINUTE  60
+
+#define EPOCH_DAY           1
+#define EPOCH_MONTH         0
+#define EPOCH_YEAR          2000
+#define EPOCH_WEEKDAY       6
 
 
 /******************************************************************************/
@@ -55,14 +64,22 @@ rtcsecs_t rtc_time2secs(struct rtctime_t *rtctime)
 	    rtctime->sec  >  60)
 		return (rtcsecs_t)-1;
 
-	secs = date2days((unsigned int)rtctime->year + 2000, 
+	secs = date2days((unsigned int)rtctime->year + EPOCH_YEAR,
 	                 rtctime->mon + 1, 
 	                 rtctime->day);
-	secs -= date2days(2000, 1, 1);
+	secs -= date2days(EPOCH_YEAR,
+	                  EPOCH_MONTH + 1,
+	                  EPOCH_DAY);
 
-	secs = secs * 24 + rtctime->hour;
-	secs = secs * 60 + rtctime->min;
-	secs = secs * 60 + rtctime->sec;
+	secs = secs * HOURS_PER_DAY      + rtctime->hour;
+	secs = secs * MINUTE_PER_HOUR    + rtctime->min;
+	secs = secs * SECONDS_PER_MINUTE + rtctime->sec;
 
 	return secs;
+}
+
+
+unsigned char rtc_weekday(rtcsecs_t rtcsecs)
+{
+	return (EPOCH_WEEKDAY + rtcsecs / HOURS_PER_DAY / MINUTE_PER_HOUR / SECONDS_PER_MINUTE) % DAYS_PER_WEEK;
 }

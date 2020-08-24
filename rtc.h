@@ -24,7 +24,8 @@ struct rtctime_t {
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
-rtcsecs_t rtc_time2secs(struct rtctime_t *rtctime);
+rtcsecs_t     rtc_time2secs(struct rtctime_t *rtctime);
+unsigned char rtc_weekday  (rtcsecs_t        rtcsecs);
 
 
 #endif	/* RTC_H */

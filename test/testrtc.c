@@ -42,12 +42,13 @@ int main(int argc, char* argv[])
 	}
 
 	start_tm_secs = timegm(&start_tm);
-	end_tm_secs = timegm(&end_tm);
+	end_tm_secs   = timegm(&end_tm);
 
 	for (test_secs = start_tm_secs; test_secs < end_tm_secs; test_secs++) {
 		struct tm         test_tm;
 		struct rtctime_t  rtctime;
 		rtcsecs_t         rtcsecs;
+		unsigned char     wday;
 
 		/* Convert time-under-test into broken-down time */
 		if (gmtime_r(&test_secs, &test_tm) != &test_tm) {
@@ -65,16 +66,21 @@ int main(int argc, char* argv[])
 
 		/* Convert broken-down time in RTC struct into seconds (since 1/1/2000) */
 		if ((rtcsecs = rtc_time2secs(&rtctime)) == -1) {
-			fprintf(stderr, "Error: rtc_time2secs failed for time %s", asctime(&test_tm));
+			fprintf(stderr, "Error: rtc_time2secs() failed for time %s", asctime(&test_tm));
 			exit(EXIT_FAILURE);
 		}
 
 		/* Test the result */
 		if (rtcsecs != test_secs - start_tm_secs) {
-			fprintf(stderr, "Error: Time '%s' (%ld seconds), produced %d, expected %ld\n", asctime(&test_tm), test_secs, rtcsecs, test_secs - start_tm_secs);
+			fprintf(stderr, "Error: rtc_time2secs() produced %d, expected %ld for time %s", rtcsecs, test_secs - start_tm_secs, asctime(&test_tm));
 			exit(EXIT_FAILURE);
 		}
 
+		/* Test the weekday function */
+		if ((wday = rtc_weekday(rtcsecs)) != test_tm.tm_wday) {
+			fprintf(stderr, "Error: rtc_weekday() produced %d, expected %d for time %s", wday, test_tm.tm_wday, asctime(&test_tm));
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	fprintf(stderr, "Test completed successfully\n");
