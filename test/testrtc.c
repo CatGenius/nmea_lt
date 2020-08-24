@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 		rtctime.year = test_tm.tm_year - 100;
 
 		/* Convert broken-down time in RTC struct into seconds (since 1/1/2000) */
-		if ((rtcsecs = rtc_time2secs(&rtctime)) == -1) {
+		if (rtc_time2secs(&rtctime, &rtcsecs) == -1) {
 			fprintf(stderr, "Error: rtc_time2secs() failed for time %s", asctime(&test_tm));
 			exit(EXIT_FAILURE);
 		}
@@ -79,6 +79,20 @@ int main(int argc, char* argv[])
 		/* Test the weekday function */
 		if ((wday = rtc_weekday(rtcsecs)) != test_tm.tm_wday) {
 			fprintf(stderr, "Error: rtc_weekday() produced %d, expected %d for time %s", wday, test_tm.tm_wday, asctime(&test_tm));
+			exit(EXIT_FAILURE);
+		}
+
+		rtc_secs2time(rtcsecs, &rtctime);
+		if (rtctime.sec  != test_tm.tm_sec  ||
+		    rtctime.min  != test_tm.tm_min  ||
+		    rtctime.hour != test_tm.tm_hour ||
+		    rtctime.day  != test_tm.tm_mday ||
+		    rtctime.mon  != test_tm.tm_mon  ||
+		    rtctime.year != test_tm.tm_year - 100) {
+			fprintf(stderr, "Error: rtc_secs2time() produced %02u/%02u/%02u %02u:%02u:%02u, expected %02u/%02u/%02u %02u:%02u:%02u for time %s",
+			                rtctime.year, rtctime.mon, rtctime.day, rtctime.hour, rtctime.min, rtctime.sec,
+			                test_tm.tm_year - 100, test_tm.tm_mon, test_tm.tm_mday, test_tm.tm_hour, test_tm.tm_min, test_tm.tm_sec,
+			                asctime(&test_tm));
 			exit(EXIT_FAILURE);
 		}
 	}

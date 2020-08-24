@@ -3,6 +3,12 @@
 
 
 /******************************************************************************/
+/* Macros                                                                     */
+/******************************************************************************/
+#define EPOCH_YEAR              2000
+
+
+/******************************************************************************/
 /* Types                                                                      */
 /******************************************************************************/
 #ifdef __x86_64__
@@ -24,8 +30,11 @@ struct rtctime_t {
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
-rtcsecs_t     rtc_time2secs(struct rtctime_t *rtctime);
-unsigned char rtc_weekday  (rtcsecs_t        rtcsecs);
+int           rtc_time2secs(struct rtctime_t  *rtctime,
+                            rtcsecs_t         *rtcsecs);
+void          rtc_secs2time(rtcsecs_t         rtcsecs,
+                            struct rtctime_t  *rtctime);
+unsigned char rtc_weekday  (rtcsecs_t         rtcsecs);
 
 
 #endif	/* RTC_H */
