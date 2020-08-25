@@ -3,13 +3,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+
+#include "rtc.h"
+
+#include "mkdst.h"
 
 
 /******************************************************************************/
 /* Macros                                                                     */
 /******************************************************************************/
 //#define TEST_MKDST
+
+#define ARRAY_SIZE(x)           (sizeof(x) / sizeof((x)[0]))
 
 
 /******************************************************************************/
@@ -19,8 +24,8 @@
 void test_mkdst(void)
 {
 	static const struct reftime_t {
-		struct tm  tm;                 /* Time to test */
-		time_t     secs;               /* Expected number of seconds since Epoch for time to test */
+		struct rtctime_t  rtctime;                 /* Time to test */
+		rtcsecs_t     secs;               /* Expected number of seconds since Epoch for time to test */
 		int        wday;               /* Expected weekday for time to test */
 		int        dst;                /* Expected daylight saving time state for time to test */
 		int        dst_one_sec_prior;  /* Expected daylight saving time state for 1 second prior to time to test */
@@ -81,11 +86,11 @@ void test_mkdst(void)
 		{ { 0, 0, 1, 28, 2, 130, -1, -1, -1 }, 2153350800, 0, 1, 0 },  /* 1:00:00 am | Sunday, 28 March 2038 */
 		{ { 0, 0, 1, 31, 9, 130, -1, -1, -1 }, 2172099600, 0, 0, 1 }   /* 1:00:00 am | Sunday, 31 October 2038 */
 	};
-	int  ndx;
+	unsigned int  ndx;
 
 	for (ndx = 0; ndx < ARRAY_SIZE(reftime); ndx++) {
-		struct tm  dst;
-		time_t     secs = mktime(&reftime[ndx].tm);
+		struct rtctime_t  dst;
+		rtcsecs_t     secs = mktime(&reftime[ndx].rtctime);
 
 		/* Test if mktime() produced the expected number of seconds since Epoch */
 		if (secs != reftime[ndx].secs) {
@@ -115,23 +120,14 @@ void test_mkdst(void)
 #endif /* TEST_MKDST */
 
 
-void mkdst(time_t utc_secs, struct tm *local)
+unsigned char dst_eu(struct rtctime_t *utc, unsigned char weekday)
 {
-	struct tm  *utc = gmtime(&utc_secs);  /* Note: XC8 completes struct tm with tm_wday in gmtime(), not in mktime() as is standard */
-
-	/* Copy UTC to Local time */
-	*local = *utc;
-
-	/* Invalidate daylight saving time flag, mistakenly set 0 instead of -1 by gmtime() */
-	local->tm_isdst = -1;
-
-	switch(local->tm_mon) {
+	switch(utc->mon) {
 	case 10:  /* November */
 	case 11:  /* December */
 	case 0:   /* January */
 	case 1:   /* February */
-		local->tm_isdst = 0;
-		return;
+		return 0;
 
 	case 3:   /* April */
 	case 4:   /* May */
@@ -139,34 +135,26 @@ void mkdst(time_t utc_secs, struct tm *local)
 	case 6:   /* July */
 	case 7:   /* August */
 	case 8:   /* September */
-		local->tm_isdst = 1;
-		return;
+		return 1;
 
 	case 2:  /* March */
 	case 9:  /* October */
 		/* Check if it is not the last week of the month yet */
-		if (local->tm_mday <= 31 - 7) {
-			local->tm_isdst = (local->tm_mon == 9) ? 1 : 0;
-			return;
-		}
+		if (utc->day <= 31 - 7)
+			return (utc->mon == 9) ? 1 : 0;
 
 		/* Check if it is the last Sunday now */
-		if (local->tm_wday == 0) {
-			if (local->tm_hour > 0)
-				local->tm_isdst = (local->tm_mon == 9) ? 0 : 1;
-			else
-				local->tm_isdst = (local->tm_mon == 9) ? 1 : 0;
-			return;
+		if (weekday == 0) {
+			if (utc->hour > 0)
+				return (utc->mon == 9) ? 0 : 1;
+			return (utc->mon == 9) ? 1 : 0;
 		}
 
 		/* Check if it is past the last Sunday */
-		if (local->tm_mday + 7 - local->tm_wday > 31) {
-			local->tm_isdst = (local->tm_mon == 9) ? 0 : 1;
-			return;
-		}
+		if (utc->day + 7 - weekday > 31)
+			return (utc->mon == 9) ? 0 : 1;
 
 		/* It is before the last Sunday */
-		local->tm_isdst = (local->tm_mon == 9) ? 1 : 0;
-		return;
+		return (utc->mon == 9) ? 1 : 0;
 	}
 }
