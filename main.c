@@ -8,7 +8,6 @@
 #include "uart1.h"
 #include "uart2.h"
 #include "rtc.h"
-#include "mkdst.h"
 #include "cmdline.h"
 #include "nmea.h"
 
@@ -50,10 +49,12 @@ static void update_rtc(rtcsecs_t utc)
 {
 	static rtcsecs_t  last_set = 0;
 
-	printf("Time = %lu\n", utc);
+	printf("Time = %lu", utc);
 
 	if (last_set)
-		printf("Diff = %lu\n", utc - last_set);
+		printf(", diff = %lu", utc - last_set);
+
+	printf("\n");
 
 	last_set = utc;
 }
@@ -128,7 +129,7 @@ static void handle_gprmc(int argc, char *argv[])
 	/* Add local time offset and daylight saving time to UTC to get local time */
 	local_secs = utc_secs +
 	             LT_OFFSET_S +
-	             (dst_eu(&utc, rtc_weekday(utc_secs)) ? DST_OFFSET_S : 0);
+	             (rtc_dst_eu(&utc, rtc_weekday(utc_secs)) ? DST_OFFSET_S : 0);
 
 	/* Break down local time in seconds */
 	rtc_secs2time(local_secs, &local);
@@ -296,7 +297,7 @@ void main(void)
 	nBOR = 1;
 
 #ifdef TEST_DST
-	test_dst_eu();
+	rtc_dst_eu_test();
 #endif /* TEST_DST */
 
 	cmdline_init();

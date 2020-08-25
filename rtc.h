@@ -13,6 +13,7 @@
 #define SECONDS_PER_DAY         (SECONDS_PER_HOUR * HOURS_PER_DAY)
 
 #define EPOCH_YEAR              2000
+#define UNIX_EPOCH_OFFSET       946684800UL
 
 
 /******************************************************************************/
@@ -37,11 +38,14 @@ struct rtctime_t {
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
-int           rtc_time2secs(const struct rtctime_t  *rtctime,
-                            rtcsecs_t               *rtcsecs);
-void          rtc_secs2time(rtcsecs_t               rtcsecs,
-                            struct rtctime_t        *rtctime);
-unsigned char rtc_weekday  (rtcsecs_t               rtcsecs);
+int           rtc_time2secs  (const struct rtctime_t  *rtctime,
+                              rtcsecs_t               *rtcsecs);
+void          rtc_secs2time  (rtcsecs_t               rtcsecs,
+                              struct rtctime_t        *rtctime);
+unsigned char rtc_weekday    (rtcsecs_t               rtcsecs);
+unsigned char rtc_dst_eu     (struct rtctime_t        *utc,
+                              unsigned char           weekday);
+void          rtc_dst_eu_test(void);
 
 
 #endif	/* RTC_H */
