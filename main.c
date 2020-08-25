@@ -4,11 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "uart1.h"
 #include "uart2.h"
-#include "mkdst.h"
+#include "rtc.h"
 #include "cmdline.h"
 #include "nmea.h"
 
@@ -16,17 +15,13 @@
 /******************************************************************************/
 /* Macros                                                                     */
 /******************************************************************************/
-#define EPOCH_YEAR              (70)
-#define MINUTES_PER_HOUR        (60)
-#define SECONDS_PER_MINUTES     (60)
-#define SECONDS_PER_HOUR        (MINUTES_PER_HOUR * SECONDS_PER_MINUTES)
 #define DST_OFFSET_S            (1 * SECONDS_PER_HOUR)
 #define LT_OFFSET_S             (1 * SECONDS_PER_HOUR)
 
 #define TIME_ZONE               (1)
 #define TIME_ZONE_M             (TIME_ZONE * MINUTES_PER_HOUR)
 
-//#define TEST_MKDST
+//#define TEST_DST
 #define ARRAY_SIZE(x)           (sizeof(x) / sizeof((x)[0]))
 
 
@@ -50,13 +45,22 @@ const struct nmea_t     nmea[] = {
 /******************************************************************************/
 /* Static functions                                                           */
 /******************************************************************************/
-static void update_rtc(time_t utc)
+static void update_rtc(rtcsecs_t utc)
 {
-	printf("time = %ld\n", utc);
+	static rtcsecs_t  last_set = 0;
+
+	printf("Time = %lu", utc);
+
+	if (last_set)
+		printf(", diff = %lu", utc - last_set);
+
+	printf("\n");
+
+	last_set = utc;
 }
 
 
-static int get_octets(char *str, int *octet[])
+static int get_octets(char *str, unsigned char *octet[])
 {
 	int  ndx;
 
@@ -72,7 +76,7 @@ static int get_octets(char *str, int *octet[])
 		}
 
 		/* Copy the numerical value into the corresponding octet */
-		*octet[ndx >> 1] = value;
+		*octet[ndx >> 1] = (unsigned char)value;
 
 		/* Overwrite the current part of the sting with a 0-terminator, so after we move back to the front, the string stops here */
 		str[ndx] = '\0';
@@ -84,61 +88,60 @@ static int get_octets(char *str, int *octet[])
 
 static void handle_gprmc(int argc, char *argv[])
 {
-	struct tm  utc;
-	struct tm  dst;
-	struct tm  *local;
-	time_t     utc_secs;
-	time_t     local_secs;
-	int        *octet[3];
-	int        ndx;
+	struct rtctime_t  utc;
+	struct rtctime_t  local;
+	rtcsecs_t         utc_secs;
+	rtcsecs_t         local_secs;
+	unsigned char     *octet[3];
+	int               ndx;
+
+	/* Check validity mark */
+	if (strcmp(argv[2], "A"))
+		return;
 
 	/* Get the 3 octets holding the time from the time argument */
-	octet[0] = &utc.tm_hour;
-	octet[1] = &utc.tm_min;
-	octet[2] = &utc.tm_sec;
+	octet[0] = &utc.hour;
+	octet[1] = &utc.min;
+	octet[2] = &utc.sec;
 	if (get_octets(argv[1], octet))
 		return;
 
 	/* Get the 3 octets holding the date from the date argument */
-	octet[0] = &utc.tm_mday;
-	octet[1] = &utc.tm_mon;
-	octet[2] = &utc.tm_year;
+	octet[0] = &utc.day;
+	octet[1] = &utc.mon;
+	octet[2] = &utc.year;
 	if (get_octets(argv[9], octet))
 		return;
 
 	/* Make month 0-based */
-	utc.tm_mon--;
-	/* Make year 1900-based */
-	if (utc.tm_year < EPOCH_YEAR)
-		utc.tm_year += 100;
+	utc.mon--;
+	/* Make year range from 2006 to 2105 */
+	if (utc.year < 6)
+		utc.year += 100;
 
 	/* Convert broken-down UTC time to seconds and complete with weekday */
-	/* (Caveat: XC8 mktime) does NOT fill out tm_wday or tm_yday */
-	if ((utc_secs = mktime(&utc)) < 0)
+	if (rtc_time2secs(&utc, &utc_secs) < 0)
 		return;
 
 	/* Send the newly received UTC time to the Real Time Clock */
 	update_rtc(utc_secs);
 
-	/* Set the DST flag (tzset() is not supported) */
-	mkdst(utc_secs, &dst);
-
 	/* Add local time offset and daylight saving time to UTC to get local time */
 	local_secs = utc_secs +
 	             LT_OFFSET_S +
-	             ((dst.tm_isdst > 0) ? DST_OFFSET_S : 0);
+	             (rtc_dst_eu(&utc, rtc_weekday(utc_secs)) ? DST_OFFSET_S : 0);
 
 	/* Break down local time in seconds */
-	local = gmtime(&local_secs);
+	rtc_secs2time(local_secs, &local);
 
 	/* Make month 1-based */
-	local->tm_mon++;
-	/* Make year 1900/2000-based */
-	local->tm_year %= 100;
+	local.mon++;
+	/* Make year 2000-based */
+	local.year %= 100;
 
 	/* Print the broken-down time back into the corresponding arguments (snprintf is not supported, modulo 100 should offer enough protection) */
-	sprintf(argv[1], "%02d%02d%02d", local->tm_hour % 100, local->tm_min % 100, local->tm_sec % 100);
-	sprintf(argv[9], "%02d%02d%02d", local->tm_mday % 100, local->tm_mon % 100, local->tm_year);
+	sprintf(argv[1], "%02d%02d%02d", local.hour % 100, local.min % 100, local.sec % 100);
+	sprintf(argv[9], "%02d%02d%02d", local.day % 100, local.mon % 100, local.year);
 
 	nmea_send(argc, argv);
 
@@ -293,9 +296,9 @@ void main(void)
 	nPOR = 1;
 	nBOR = 1;
 
-#ifdef TEST_MKDST
-	test_mkdst();
-#endif /* TEST_MKDST */
+#ifdef TEST_DST
+	rtc_dst_eu_test();
+#endif /* TEST_DST */
 
 	cmdline_init();
 
