@@ -11,9 +11,9 @@
 /******************************************************************************/
 /*** Functions                                                              ***/
 /******************************************************************************/
-unsigned char dst_eu    (struct rtctime_t  *utc,
-                         unsigned char     weekday);
-void          test_mkdst(void);
+unsigned char dst_eu     (struct rtctime_t  *utc,
+                          unsigned char     weekday);
+void          test_dst_eu(void);
 
 
 #endif /* MKDST_H */

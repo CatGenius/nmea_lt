@@ -5,6 +5,13 @@
 /******************************************************************************/
 /* Macros                                                                     */
 /******************************************************************************/
+#define SECONDS_PER_MINUTE      60UL
+#define MINUTES_PER_HOUR        60UL
+#define HOURS_PER_DAY           24UL
+
+#define SECONDS_PER_HOUR        (SECONDS_PER_MINUTE * MINUTES_PER_HOUR)
+#define SECONDS_PER_DAY         (SECONDS_PER_HOUR * HOURS_PER_DAY)
+
 #define EPOCH_YEAR              2000
 
 
@@ -30,11 +37,11 @@ struct rtctime_t {
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
-int           rtc_time2secs(struct rtctime_t  *rtctime,
-                            rtcsecs_t         *rtcsecs);
-void          rtc_secs2time(rtcsecs_t         rtcsecs,
-                            struct rtctime_t  *rtctime);
-unsigned char rtc_weekday  (rtcsecs_t         rtcsecs);
+int           rtc_time2secs(const struct rtctime_t  *rtctime,
+                            rtcsecs_t               *rtcsecs);
+void          rtc_secs2time(rtcsecs_t               rtcsecs,
+                            struct rtctime_t        *rtctime);
+unsigned char rtc_weekday  (rtcsecs_t               rtcsecs);
 
 
 #endif	/* RTC_H */

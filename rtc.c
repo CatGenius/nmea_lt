@@ -4,18 +4,12 @@
 /******************************************************************************/
 /* Macros                                                                     */
 /******************************************************************************/
-#define SECONDS_PER_MINUTE      60UL
-#define MINUTES_PER_HOUR        60UL
-#define HOURS_PER_DAY           24UL
 #define DAYS_PER_WEEK           7
 #define DAYS_PER_YEAR           365              /* Number of days in a non-leap year */
 #define DAYS_PER_4_YEARS        (3 * 365 + 366)  /* There is one leap year every 4 years */
 #define DAYS_PER_CENTURY        36524UL          /* There are 24 leap years in 100-year periods. ((100 - 24) * 365 + 24 * 366) */
 #define DAYS_PER_ERA            146097UL         /* There are 97 leap years in 400-year periods. ((400 - 97) * 365 + 97 * 366) */
 #define YEARS_PER_ERA           400
-
-#define SECONDS_PER_HOUR        (SECONDS_PER_MINUTE * MINUTES_PER_HOUR)
-#define SECONDS_PER_DAY         (SECONDS_PER_HOUR * HOURS_PER_DAY)
 
 #define EPOCH_DAY               1
 #define EPOCH_MONTH             0
@@ -62,7 +56,7 @@ static rtcsecs_t date2days(unsigned int year, unsigned char mon, unsigned char d
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
-int rtc_time2secs(struct rtctime_t *rtctime, rtcsecs_t *rtcsecs)
+int rtc_time2secs(const struct rtctime_t *rtctime, rtcsecs_t *rtcsecs)
 {
 	if (rtctime->year > 105 ||
 	    rtctime->mon  >  11 ||

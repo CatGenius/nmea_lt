@@ -22,7 +22,7 @@
 #define TIME_ZONE               (1)
 #define TIME_ZONE_M             (TIME_ZONE * MINUTES_PER_HOUR)
 
-//#define TEST_MKDST
+//#define TEST_DST
 #define ARRAY_SIZE(x)           (sizeof(x) / sizeof((x)[0]))
 
 
@@ -295,9 +295,9 @@ void main(void)
 	nPOR = 1;
 	nBOR = 1;
 
-#ifdef TEST_MKDST
-	test_mkdst();
-#endif /* TEST_MKDST */
+#ifdef TEST_DST
+	test_dst_eu();
+#endif /* TEST_DST */
 
 	cmdline_init();
 
