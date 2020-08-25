@@ -40,7 +40,7 @@ static int cmd2index(char *cmd)
 		index++;
 	}
 
-	return (-1);
+	return -1;
 }
 
 
