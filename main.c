@@ -188,8 +188,8 @@ static void init_clocks(void)
 	/* Set HFINTOSC to 32MHz */
 	OSCFRQbits.HFFRQ = 0x06;
 
-	/* Reset oscillator tuning */
-	OSCTUNEbits.HFTUN = 0x00;
+	/* Set oscillator tuning to center frequency */
+	OSCTUNEbits.HFTUN = 0;
 }
 
 

@@ -77,19 +77,22 @@ void rtc_isr (void)
 	if (++ticks < TICKS_PER_SECOND)
 		return;
 	ticks = 0;
-
 	rtc++;
 }
 
 
 void rtc_set_time(rtcsecs_t utc)
 {
-	static rtcsecs_t  last_set = 0;
-	rtcsecs_t         _rtc = rtc;
-	unsigned int      _ticks = ticks;
+	static rtcsecs_t  prev_utc = 0;
+	rtcsecs_t         stored_rtc;
+	unsigned int      stored_ticks;
 	
 	/* Disable timer 0 interrupt for concurrency */
 	TMR0IE = 0;		
+
+	/* Store the current rtc and tick value before changing them, for calibration */
+	stored_rtc   = rtc;
+	stored_ticks = ticks;
 
 	/* Configure and start timer 0 if not running and hence rtc not set before */
 	if (!T0CON0bits.T0EN) {
@@ -111,14 +114,32 @@ void rtc_set_time(rtcsecs_t utc)
 	/* (Re-)enable timer 0 interrupt */
 	TMR0IE = 1;
 
-	printf("Time = %lu", utc);
-	if (last_set)
-		printf(", rtc = %ld (%04u)", _rtc - utc, _ticks);
-	printf("\n");
-	last_set = utc;
-/*
-	OSCTUNE (-32...+31 ~ 0.05& to 0.1% per tick )
-*/
+	if (prev_utc) {
+		int        tune      = OSCTUNEbits.HFTUN;
+		long       deviation = stored_rtc - utc;
+		rtcsecs_t  elapsed   = utc - prev_utc;
+
+		/* Set high bits to carry negative value */
+		if (tune & 0x20)
+			tune |= 0xffc0;
+
+		/* Calculate the deviation */
+		if (deviation < 0)
+			deviation = TICKS_PER_SECOND * (deviation + 1) - (TICKS_PER_SECOND - stored_ticks);
+		else
+			deviation = TICKS_PER_SECOND * deviation + stored_ticks;
+		printf("%lu seconds elapsed, off by %ld ms (@tune = %d)\n", elapsed, deviation, tune);
+
+		if (deviation < 0) {
+			if (tune < 31)
+				tune++;
+		} else if (deviation > 0) {
+			if (tune > -32)
+				tune--;
+		}
+		OSCTUNEbits.HFTUN = tune & 0x3f;
+	}
+	prev_utc = utc;
 }
 
 
