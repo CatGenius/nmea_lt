@@ -1,3 +1,7 @@
+#include <xc.h>
+
+#include <stdio.h>
+
 #include "rtc.h"
 
 
@@ -18,8 +22,18 @@
 #define BASE_YEAR               0                /* The year 0000 */
 #define EPOCH_OFFSET_DAYS       (730425UL)
 
+#define TICKS_PER_SECOND        1000U
+
 //#define TEST_DST
 #define ARRAY_SIZE(x)           (sizeof(x) / sizeof((x)[0]))
+
+
+/******************************************************************************/
+/* Global Data                                                                */
+/******************************************************************************/
+static volatile rtcsecs_t      rtc = 0;
+static volatile unsigned int   ticks;
+
 
 /******************************************************************************/
 /* Static functions                                                           */
@@ -47,7 +61,7 @@ static rtcsecs_t date2days(unsigned int year, unsigned char mon, unsigned char d
 	rtcsecs_t  days = (rtcsecs_t)day + month2days(mon);
 
 	if (mon > 2)
-		days -= leapyear(year) ? 1 : 2;
+		days -= leapyear(year) ? 1U : 2U;
 	year--;
 	days += year2days(year);
 
@@ -58,6 +72,56 @@ static rtcsecs_t date2days(unsigned int year, unsigned char mon, unsigned char d
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
+void rtc_isr (void)
+{
+	if (++ticks < TICKS_PER_SECOND)
+		return;
+	ticks = 0;
+
+	rtc++;
+}
+
+
+void rtc_set_time(rtcsecs_t utc)
+{
+	static rtcsecs_t  last_set = 0;
+	rtcsecs_t         _rtc = rtc;
+	unsigned int      _ticks = ticks;
+	
+	/* Disable timer 0 interrupt for concurrency */
+	TMR0IE = 0;		
+
+	/* Configure and start timer 0 if not running and hence rtc not set before */
+	if (!T0CON0bits.T0EN) {
+		T0CON0bits.T016BIT = 0;  /* Select 8-bit mode */
+		T0CON0bits.T0OUTPS = 9;  /* Set post-scaler to 1:10 (1kHZ / 10 = 1kHz) */
+		T0CON1bits.T0CS    = 3;  /* Set clock source to HFINTOSC */
+		T0CON1bits.T0CKPS  = 5;  /* Set pre-scaler to 1:32 (32MHz / 32 = 1MHZ)*/
+		T0CON1bits.T0ASYNC = 1;  /* Enable asynchronous mode */
+
+		TMR0H = 100;             /* Set compare value to 100 (1MHZ / 100 = 10kHz) */
+		T0CON0bits.T0EN    = 1;  /* Enable timer 0 */
+	}
+
+	/* Set the rtc time and reset the pre-scalers */
+	rtc   = utc;
+	ticks = 0;
+	TMR0L = 0;
+
+	/* (Re-)enable timer 0 interrupt */
+	TMR0IE = 1;
+
+	printf("Time = %lu", utc);
+	if (last_set)
+		printf(", rtc = %ld (%04u)", _rtc - utc, _ticks);
+	printf("\n");
+	last_set = utc;
+/*
+	OSCTUNE (-32...+31 ~ 0.05& to 0.1% per tick )
+*/
+}
+
+
 int rtc_time2secs(const struct rtctime_t *rtctime, rtcsecs_t *rtcsecs)
 {
 	if (rtctime->year > 105 ||
@@ -69,11 +133,11 @@ int rtc_time2secs(const struct rtctime_t *rtctime, rtcsecs_t *rtcsecs)
 		return -1;
 
 	*rtcsecs = date2days((unsigned int)rtctime->year + EPOCH_YEAR,
-	                 rtctime->mon + 1, 
-	                 rtctime->day);
+	                     rtctime->mon + 1U,
+	                     rtctime->day);
 	*rtcsecs -= date2days(EPOCH_YEAR,
-	                  EPOCH_MONTH + 1,
-	                  EPOCH_DAY);
+	                      EPOCH_MONTH + 1U,
+	                      EPOCH_DAY);
 
 	*rtcsecs = *rtcsecs * HOURS_PER_DAY      + rtctime->hour;
 	*rtcsecs = *rtcsecs * MINUTES_PER_HOUR   + rtctime->min;

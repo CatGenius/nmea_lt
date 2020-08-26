@@ -1,4 +1,3 @@
-//#include "configbits.h"		/* PIC MCU configuration bits, include before anything else */
 #include <xc.h>
 
 #include <stdio.h>
@@ -45,21 +44,6 @@ const struct nmea_t     nmea[] = {
 /******************************************************************************/
 /* Static functions                                                           */
 /******************************************************************************/
-static void update_rtc(rtcsecs_t utc)
-{
-	static rtcsecs_t  last_set = 0;
-
-	printf("Time = %lu", utc);
-
-	if (last_set)
-		printf(", diff = %lu", utc - last_set);
-
-	printf("\n");
-
-	last_set = utc;
-}
-
-
 static int get_octets(char *str, unsigned char *octet[])
 {
 	int  ndx;
@@ -124,7 +108,7 @@ static void handle_gprmc(int argc, char *argv[])
 		return;
 
 	/* Send the newly received UTC time to the Real Time Clock */
-	update_rtc(utc_secs);
+	rtc_set_time(utc_secs);
 
 	/* Add local time offset and daylight saving time to UTC to get local time */
 	local_secs = utc_secs +
@@ -212,8 +196,12 @@ static void init_clocks(void)
 static void init_pins(void)
 {
 	/* Disable analog input on pins used digitally */
-	ANSELC &= ~((1 << 1) |  /* Pin RC1 */
-	            (1 << 5));  /* Pin RC5 */
+	ANSELC &= ~((1 << 1) |  /* Pin 9, RC1 */
+		    (1 << 3) |  /* Pin 7, RC3 */
+	            (1 << 5));  /* Pin 5, RC5 */
+
+	/* Switch RC3 to output (unlike the UARTs, TMR doesn't seem to take control over this) */
+	TRISC  &= ~(1 << 3);    /* Pin 7, RC3 */
 
 	/* Unlock Peripheral Pin Select module (PPS) */
 	PPSLOCK = 0x55;
@@ -227,6 +215,9 @@ static void init_pins(void)
 	/* UART2 */
 	RX2DTPPS = 0x11;  /* Connect RX2 to RC1 input pin */
 	RC0PPS   = 0x11;  /* Connect RC0 output pin to TX2 */
+
+	/* TMR0 */
+	RC3PPS   = 0x19;  /* Connect RC3 output pin to TX2 */
 
 	/* Lock Peripheral Pin Select module (PPS) */
 	PPSLOCK = 0x55;
@@ -250,12 +241,12 @@ static void init_interrupt(void)
 /******************************************************************************/
 void __interrupt() isr(void)
 {
-	/* Timer 1 interrupt */
-	if (TMR1IF) {
+	/* Timer 0 interrupt */
+	if (TMR0IF) {
 		/* Reset interrupt */
-		TMR1IF = 0;
+		TMR0IF = 0;
 		/* Handle interrupt */
-//		timer_isr();
+		rtc_isr();
 	}
 
 	/* (E)USART 1 interrupts */
