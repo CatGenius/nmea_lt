@@ -38,6 +38,8 @@ struct rtctime_t {
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
+void          rtc_isr        (void);
+void          rtc_set_time   (rtcsecs_t               utc);
 int           rtc_time2secs  (const struct rtctime_t  *rtctime,
                               rtcsecs_t               *rtcsecs);
 void          rtc_secs2time  (rtcsecs_t               rtcsecs,
