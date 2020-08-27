@@ -67,6 +67,7 @@ static rtcsecs_t date2days(unsigned int year, unsigned char mon, unsigned char d
 }
 
 
+#ifdef HAS_RTC
 static inline void calibrate(rtcsecs_t elapsed, long deviation, unsigned int actual_ticks)
 {
 		int  tune = OSCTUNEbits.HFTUN;
@@ -91,11 +92,13 @@ static inline void calibrate(rtcsecs_t elapsed, long deviation, unsigned int act
 		}
 		OSCTUNEbits.HFTUN = tune & 0x3f;
 }
+#endif /* HAS_RTC */
 
 
 /******************************************************************************/
 /* Functions                                                                  */
 /******************************************************************************/
+#ifdef HAS_RTC
 void rtc_isr (void)
 {
 	if (++ticks < TICKS_PER_SECOND)
@@ -142,6 +145,7 @@ void rtc_set_time(rtcsecs_t utc)
 		calibrate(utc - prev_utc, actual_rtc - utc, actual_ticks);  /* TODO: Improve subtraction of two unsigneds into signed for argument 2 */
 	prev_utc = utc;
 }
+#endif /* HAS_RTC */
 
 
 int rtc_time2secs(const struct rtctime_t *rtctime, rtcsecs_t *rtcsecs)

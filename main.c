@@ -107,8 +107,10 @@ static void handle_gprmc(int argc, char *argv[])
 	if (rtc_time2secs(&utc, &utc_secs) < 0)
 		return;
 
+#ifdef HAS_RTC
 	/* Send the newly received UTC time to the Real Time Clock */
 	rtc_set_time(utc_secs);
+#endif /* HAS_RTC */
 
 	/* Add local time offset and daylight saving time to UTC to get local time */
 	local_secs = utc_secs +
@@ -241,6 +243,7 @@ static void init_interrupt(void)
 /******************************************************************************/
 void __interrupt() isr(void)
 {
+#ifdef HAS_RTC
 	/* Timer 0 interrupt */
 	if (TMR0IF) {
 		/* Reset interrupt */
@@ -248,6 +251,7 @@ void __interrupt() isr(void)
 		/* Handle interrupt */
 		rtc_isr();
 	}
+#endif /* HAS_RTC */
 
 	/* (E)USART 1 interrupts */
 	if (RC1IF)

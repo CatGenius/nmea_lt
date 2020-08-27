@@ -1,0 +1,59 @@
+Software RTC
+============
+
+Since this project modifies the NMEA sentences it receives, it only sends out
+time updates when they are being received. For GPS receivers this occurs every
+second or every other second, but for devices like the PV Electronics WiFi NTP
+Sync Device, this occurs every 3271 seconds.
+https://www.pvelectronics.co.uk/index.php?main_page=product_info&cPath=10&products_id=188
+Therefore, and in case of signal loss, it would be de preferable to send out a
+spontaneous update after switching to or from daylight saving time.
+
+To achieve this, an on-board RTC in required to keep track of time in between
+updates. Unfortunately, the PIC16F15325 does not have such a peripheral. The
+next best alternative would be to have an 32.768kHz crystal drive one of the
+internal timers, but driving a crystal is hard and crystals are expensive.
+
+Alternatively, the internal HF oscillator ()LFINTOSC is specified as being
+high-precision factory calibrated with a +/- 1MHz typical accuraty. On top of
+that, it can be tuned to frequency using the HFTUNE register. Having an
+external reference sending NMEA time updates every 3271 seconds perfectly
+allows software to tune the internal oscillator to an exact fequecy.
+
+Unfortunately, the internal HF oscillator is not stable enough and the tuning
+granularity is not fine enough to be used as an RTC. As the log below shows,
+deviations of (well) over a second over a period of almost an hour (54:31)
+are not uncommon. The tuning algoritm coulde be better though: Value 6 is
+showing potential, but with values 6 and 7 differing over 2 seconds, other
+circumstances may not have a value that close to 0.
+
+
+*** NMEA local time converter ***
+Power-on reset
+# 16 seconds elapsed, off by -131 ms (@tune = 6)
+16 seconds elapsed, off by -8 ms (@tune = 7)
+16 seconds elapsed, off by 24 ms (@tune = 8)
+16 seconds elapsed, off by -3 ms (@tune = 7)
+3271 seconds elapsed, off by 7310 ms (@tune = 8)
+3271 seconds elapsed, off by 2294 ms (@tune = 7)
+3271 seconds elapsed, off by -753 ms (@tune = 6)
+3271 seconds elapsed, off by 1004 ms (@tune = 7)
+3271 seconds elapsed, off by -868 ms (@tune = 6)
+3271 seconds elapsed, off by 1647 ms (@tune = 7)
+3271 seconds elapsed, off by -207 ms (@tune = 6)
+3271 seconds elapsed, off by 1745 ms (@tune = 7)
+3271 seconds elapsed, off by -598 ms (@tune = 6)
+3275 seconds elapsed, off by 1432 ms (@tune = 7)
+16 seconds elapsed, off by -28 ms (@tune = 6)
+16 seconds elapsed, off by 10 ms (@tune = 7)
+16 seconds elapsed, off by 2 ms (@tune = 6)
+16 seconds elapsed, off by -14 ms (@tune = 5)
+3271 seconds elapsed, off by -358 ms (@tune = 6)
+3271 seconds elapsed, off by 980 ms (@tune = 7)
+3271 seconds elapsed, off by -706 ms (@tune = 6)
+3271 seconds elapsed, off by 1056 ms (@tune = 7)
+3271 seconds elapsed, off by 239 ms (@tune = 6)
+3271 seconds elapsed, off by -2162 ms (@tune = 5)
+3271 seconds elapsed, off by 541 ms (@tune = 6)
+3271 seconds elapsed, off by -3845 ms (@tune = 5)
+3271 seconds elapsed, off by -1337 ms (@tune = 6)
